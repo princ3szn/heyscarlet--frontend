@@ -14,7 +14,7 @@ function TheLemniscate({ width = 24, height = 24, style }: { width?: number | st
 // ---------------------------------------------------------------
 // Persona definitions
 // ---------------------------------------------------------------
-export type PersonaId = "scarlet" | "executive" | "anchor";
+export type PersonaId = "scarlet" | "boss" | "mother" | "therapist" | "father" | "sage" | "coach";
 
 export interface Persona {
   id: PersonaId;
@@ -22,7 +22,6 @@ export interface Persona {
   tagline: string;
   accent: string;
   accentDeep: string;
-  accentGlow: string;
   premium: boolean;
   description: string;
 }
@@ -34,30 +33,63 @@ export const PERSONAS: Persona[] = [
     tagline: "Balanced · Strategic · Present",
     accent: "#C0392B",
     accentDeep: "#8B1A1A",
-    accentGlow: "rgba(192,57,43,0.15)",
     premium: false,
     description: "Your default companion. Poised, precise, and genuinely challenging.",
   },
   {
-    id: "executive",
-    name: "The Executive",
-    tagline: "Direct · Pressured · Zero cushioning",
-    accent: "#E8A020",
-    accentDeep: "#A06010",
-    accentGlow: "rgba(232,160,32,0.15)",
+    id: "boss",
+    name: "The Boss",
+    tagline: "Clinical · Results-driven",
+    accent: "#E63946",
+    accentDeep: "#8B1A1A",
     premium: true,
-    description: "No patience for excuses. High pressure, high output. For when you need to be pushed hard.",
+    description: "Clinical, results-driven. Detects excuses and demands output.",
   },
   {
-    id: "anchor",
-    name: "The Anchor",
-    tagline: "Warm · Patient · Unconditional",
-    accent: "#4A90C4",
-    accentDeep: "#2A5A8A",
-    accentGlow: "rgba(74,144,196,0.15)",
+    id: "mother",
+    name: "The Mother",
+    tagline: "Warm · Loving · Unyielding",
+    accent: "#F4A261",
+    accentDeep: "#D97706",
     premium: true,
-    description: "The quiet room. Deep patience, slow challenge. For recovery, grief, and identity-level work.",
+    description: "Warm, loving, and Nigerian in her warmth. Believes in you completely, but will not watch you play small.",
   },
+  {
+    id: "therapist",
+    name: "The Therapist",
+    tagline: "Non-judgmental · Logical",
+    accent: "#2A9D8F",
+    accentDeep: "#134E4A",
+    premium: true,
+    description: "Non-judgmental. Holds the mess with you, then helps you find the logic in it.",
+  },
+  {
+    id: "father",
+    name: "The Father",
+    tagline: "Quiet · Proud · Protective",
+    accent: "#4361EE",
+    accentDeep: "#1E3A8A",
+    premium: true,
+    description: "Quiet, proud, protective. Capable of the one sentence that stings because it is true.",
+  },
+  {
+    id: "sage",
+    name: "The Sage",
+    tagline: "Wise · Unhurried · Long view",
+    accent: "#2DC653",
+    accentDeep: "#064E3B",
+    premium: true,
+    description: "Wise, unhurried. Speaks from a long view. Reframes problems rather than attacking them.",
+  },
+  {
+    id: "coach",
+    name: "The Coach",
+    tagline: "Strategic · Structured · Growth",
+    accent: "#7209B8",
+    accentDeep: "#4C1D95",
+    premium: true,
+    description: "Strategic, structured. Focused on skill-building, growth, and the next right step.",
+  }
 ];
 
 // ---------------------------------------------------------------

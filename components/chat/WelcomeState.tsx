@@ -25,7 +25,7 @@ export function WelcomeState({ onPrompt }: WelcomeStateProps) {
       textAlign: "center",
     }}>
 
-      {/* Lemniscate */}
+      {/* Lemniscate with Dynamic Blend Mode */}
       <motion.div
         initial={{ opacity: 0, scale: 0.7 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -42,8 +42,9 @@ export function WelcomeState({ onPrompt }: WelcomeStateProps) {
             ],
           }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
+          style={{ mixBlendMode: "var(--glow-blend)" as any }}
         >
-          <TheLemniscate width={100} height={62} />
+          <TheLemniscate width={100} height={62} style={{ color: "var(--scarlet)" }} />
         </motion.div>
       </motion.div>
 
@@ -71,7 +72,7 @@ export function WelcomeState({ onPrompt }: WelcomeStateProps) {
         </div>
       </motion.div>
 
-      {/* Suggested prompts — Updated for High Contrast */}
+      {/* Suggested prompts - High Contrast */}
       <div style={{
         display: "flex", flexDirection: "column", gap: 10,
         width: "100%", maxWidth: 480,

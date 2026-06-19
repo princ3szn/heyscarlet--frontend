@@ -12,6 +12,9 @@ interface InputBarProps {
   onPersonaSwitch: (p: Persona) => void;
 }
 
+// Fixed TypeScript animation constraints
+const popSpring = { type: "spring", stiffness: 400, damping: 30 } as const;
+
 export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: InputBarProps) {
   const [text, setText] = useState("");
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -20,7 +23,6 @@ export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: Input
 
   const activePersona = PERSONAS.find(p => p.id === personaId) || PERSONAS[0];
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
@@ -28,12 +30,9 @@ export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: Input
     }
   }, [text]);
 
-  // Close picker on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setPickerOpen(false);
-      }
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setPickerOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -50,28 +49,16 @@ export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: Input
   }
 
   return (
-    <div style={{ width: "100%", position: "relative" }}>
+    <motion.div layout style={{ width: "100%", position: "relative", zIndex: 30 }}>
       
-      {/* 
-        The main input container 
-        Uses high-contrast CSS variables so it adapts perfectly to Light/Dark mode
-      */}
       <div style={{
-        background: "var(--surface)",
-        border: "1px solid var(--input-border)",
-        borderRadius: 16,
-        padding: "12px 14px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 8,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
-        transition: "border-color 0.3s",
+        background: "var(--card-bg)", border: "1px solid var(--input-border)", borderRadius: 24,
+        padding: "16px 20px", display: "flex", flexDirection: "column", gap: 14,
+        boxShadow: "0 12px 40px rgba(0,0,0,0.15)", backdropFilter: "blur(24px)", transition: "border-color 0.3s",
       }}
       onFocus={(e) => e.currentTarget.style.borderColor = "var(--scarlet)"}
       onBlur={(e) => e.currentTarget.style.borderColor = "var(--input-border)"}
       >
-        
-        {/* Textarea */}
         <textarea
           ref={textareaRef}
           value={text}
@@ -81,79 +68,50 @@ export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: Input
           disabled={disabled}
           rows={1}
           style={{
-            width: "100%",
-            background: "transparent",
-            border: "none",
-            color: "var(--text-primary)",
-            fontFamily: "'DM Sans', sans-serif",
-            fontSize: 15,
-            lineHeight: 1.5,
-            resize: "none",
-            outline: "none",
-            maxHeight: 200,
+            width: "100%", background: "transparent", border: "none", color: "var(--text-primary)",
+            fontFamily: "'DM Sans', sans-serif", fontSize: 15, lineHeight: 1.6, resize: "none",
+            outline: "none", maxHeight: 200, padding: 0
           }}
         />
 
-        {/* Footer: Persona Switcher (Left) + Send Button (Right) */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", position: "relative" }}>
           
-          {/* Embedded Persona Switcher */}
           <div ref={pickerRef} style={{ position: "relative" }}>
-            <button
-              type="button"
-              onClick={() => setPickerOpen(!pickerOpen)}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                background: pickerOpen ? "var(--hover-bg)" : "transparent",
-                border: "none", borderRadius: 8,
-                padding: "6px 10px", cursor: "pointer",
-                fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500,
-                color: "var(--text-muted)", transition: "all 0.2s",
+            <motion.button whileTap={{ scale: 0.96 }} type="button" onClick={() => setPickerOpen(!pickerOpen)} style={{
+                display: "flex", alignItems: "center", gap: 8, background: pickerOpen ? "var(--hover-bg)" : "var(--input-bg)",
+                border: "1px solid var(--border)", borderRadius: 10, padding: "8px 12px", cursor: "pointer",
+                fontFamily: "'DM Sans', sans-serif", fontSize: 12, fontWeight: 500, color: "var(--text-primary)", transition: "all 0.2s",
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.color = "var(--text-primary)"; e.currentTarget.style.background = "var(--hover-bg)"; }}
-              onMouseLeave={(e) => { if (!pickerOpen) { e.currentTarget.style.color = "var(--text-muted)"; e.currentTarget.style.background = "transparent"; } }}
             >
-              <span style={{ color: "var(--scarlet)" }}><TheLemniscate width={14} height={9} /></span>
+              <span style={{ color: activePersona.accent }}><TheLemniscate width={18} height={12} /></span>
               {activePersona.name}
-              <motion.svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" animate={{ rotate: pickerOpen ? 180 : 0 }}>
+              <motion.svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" animate={{ rotate: pickerOpen ? 180 : 0 }} transition={popSpring}>
                 <polyline points="6 9 12 15 18 9" />
               </motion.svg>
-            </button>
+            </motion.button>
 
-            {/* Dropdown Menu */}
             <AnimatePresence>
               {pickerOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  style={{
-                    position: "absolute", bottom: "calc(100% + 8px)", left: 0,
-                    width: 240, background: "var(--surface-2)",
-                    border: "1px solid var(--border)", borderRadius: 12,
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.2)", overflow: "hidden", zIndex: 50,
+                <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={popSpring} style={{
+                    position: "absolute", bottom: "calc(100% + 12px)", left: 0, width: 260, background: "var(--card-bg)",
+                    border: "1px solid var(--border)", borderRadius: 14, boxShadow: "0 16px 48px rgba(0,0,0,0.4)", overflow: "hidden", zIndex: 50, backdropFilter: "blur(20px)"
                   }}
                 >
-                  <div style={{ padding: "10px 14px 8px", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-faint)", borderBottom: "1px solid var(--border-subtle)" }}>
+                  <div style={{ padding: "12px 16px 8px", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-dim)", borderBottom: "1px solid var(--border-subtle)", fontFamily: "'DM Sans', sans-serif" }}>
                     Switch Persona
                   </div>
                   {PERSONAS.map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => { if (!p.premium) onPersonaSwitch(p); setPickerOpen(false); }}
-                      style={{
-                        width: "100%", padding: "12px 14px", textAlign: "left",
-                        background: personaId === p.id ? "var(--msg-user-bg)" : "transparent",
-                        border: "none", borderLeft: `2px solid ${personaId === p.id ? "var(--scarlet)" : "transparent"}`,
-                        display: "flex", alignItems: "center", gap: 10, cursor: "pointer", transition: "background 0.15s",
+                    <button key={p.id} onClick={() => { if (!p.premium) onPersonaSwitch(p); setPickerOpen(false); }} style={{
+                        width: "100%", padding: "14px 16px", textAlign: "left", background: personaId === p.id ? "var(--hover-bg)" : "transparent",
+                        border: "none", borderLeft: `3px solid ${personaId === p.id ? p.accent : "transparent"}`, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", transition: "background 0.15s",
                       }}
                       onMouseEnter={(e) => { if (personaId !== p.id) e.currentTarget.style.background = "var(--hover-bg)"; }}
                       onMouseLeave={(e) => { if (personaId !== p.id) e.currentTarget.style.background = "transparent"; }}
                     >
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, color: personaId === p.id ? "var(--text-primary)" : "var(--text-muted)", fontFamily: "'DM Sans', sans-serif" }}>
-                          {p.name} {p.premium && <span style={{ fontSize: 9, color: p.accent, marginLeft: 6 }}>(Premium)</span>}
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.accent }}></div>
+                        <div style={{ fontSize: 13, color: "var(--text-primary)", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
+                          {p.name} {p.premium && <span style={{ fontSize: 9, color: p.accent, marginLeft: 6, padding: "2px 6px", background: `${p.accent}20`, borderRadius: 4, textTransform: "uppercase" }}>Pro</span>}
                         </div>
                       </div>
                     </button>
@@ -163,32 +121,24 @@ export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: Input
             </AnimatePresence>
           </div>
 
-          {/* Send Button */}
-          <button
-            type="button"
-            onClick={() => { if (text.trim() && !disabled) { onSend(text.trim()); setText(""); } }}
-            disabled={!text.trim() || disabled}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              width: 32, height: 32, borderRadius: 8, border: "none",
-              background: text.trim() && !disabled ? "var(--scarlet)" : "var(--surface-2)",
-              color: text.trim() && !disabled ? "#fff" : "var(--text-faint)",
-              cursor: text.trim() && !disabled ? "pointer" : "default",
-              transition: "all 0.2s",
+          <motion.button whileTap={{ scale: text.trim() && !disabled ? 0.9 : 1 }} type="button" onClick={() => { if (text.trim() && !disabled) { onSend(text.trim()); setText(""); } }} disabled={!text.trim() || disabled} style={{
+              display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 12, border: "none",
+              background: text.trim() && !disabled ? "var(--scarlet)" : "var(--surface)", color: text.trim() && !disabled ? "#fff" : "var(--text-muted)", cursor: text.trim() && !disabled ? "pointer" : "default", transition: "background 0.2s, color 0.2s",
+              boxShadow: text.trim() && !disabled ? "0 4px 16px var(--scarlet-glow)" : "none"
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>
-          </button>
+          </motion.button>
 
         </div>
       </div>
 
-      <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-faint)", marginTop: 10 }}>
-        Enter to send · Shift + Enter for new line
+      <div style={{ textAlign: "center", fontSize: 11, color: "var(--text-faint)", marginTop: 12, fontFamily: "'DM Sans', sans-serif" }}>
+        Enter to send &nbsp;&middot;&nbsp; Shift + Enter for new line
       </div>
-    </div>
+    </motion.div>
   );
 }
