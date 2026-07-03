@@ -12,7 +12,6 @@ interface InputBarProps {
   onPersonaSwitch: (p: Persona) => void;
 }
 
-// Fixed TypeScript animation constraints
 const popSpring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
 export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: InputBarProps) {
@@ -93,7 +92,7 @@ export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: Input
             <AnimatePresence>
               {pickerOpen && (
                 <motion.div initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }} transition={popSpring} style={{
-                    position: "absolute", bottom: "calc(100% + 12px)", left: 0, width: 260, background: "var(--card-bg)",
+                    position: "absolute", bottom: "calc(100% + 12px)", left: 0, width: 280, background: "var(--card-bg)",
                     border: "1px solid var(--border)", borderRadius: 14, boxShadow: "0 16px 48px rgba(0,0,0,0.4)", overflow: "hidden", zIndex: 50, backdropFilter: "blur(20px)"
                   }}
                 >
@@ -103,15 +102,16 @@ export function InputBar({ onSend, disabled, personaId, onPersonaSwitch }: Input
                   {PERSONAS.map(p => (
                     <button key={p.id} onClick={() => { if (!p.premium) onPersonaSwitch(p); setPickerOpen(false); }} style={{
                         width: "100%", padding: "14px 16px", textAlign: "left", background: personaId === p.id ? "var(--hover-bg)" : "transparent",
-                        border: "none", borderLeft: `3px solid ${personaId === p.id ? p.accent : "transparent"}`, display: "flex", alignItems: "center", gap: 10, cursor: "pointer", transition: "background 0.15s",
+                        border: "none", borderLeft: `3px solid ${personaId === p.id ? p.accent : "transparent"}`, display: "flex", alignItems: "center", gap: 10, cursor: p.premium ? "default" : "pointer", transition: "background 0.15s",
                       }}
-                      onMouseEnter={(e) => { if (personaId !== p.id) e.currentTarget.style.background = "var(--hover-bg)"; }}
+                      onMouseEnter={(e) => { if (personaId !== p.id && !p.premium) e.currentTarget.style.background = "var(--hover-bg)"; }}
                       onMouseLeave={(e) => { if (personaId !== p.id) e.currentTarget.style.background = "transparent"; }}
                     >
-                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8 }}>
+                      <div style={{ flex: 1, display: "flex", alignItems: "center", gap: 8, opacity: p.premium ? 0.6 : 1 }}>
                         <div style={{ width: 8, height: 8, borderRadius: "50%", background: p.accent }}></div>
-                        <div style={{ fontSize: 13, color: "var(--text-primary)", fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
-                          {p.name} {p.premium && <span style={{ fontSize: 9, color: p.accent, marginLeft: 6, padding: "2px 6px", background: `${p.accent}20`, borderRadius: 4, textTransform: "uppercase" }}>Pro</span>}
+                        <div style={{ fontSize: 13, color: "var(--text-primary)", fontFamily: "'DM Sans', sans-serif", fontWeight: 500, display: "flex", alignItems: "center", flexWrap: "wrap", gap: "6px" }}>
+                          {p.name} 
+                          {p.premium && <span style={{ fontSize: 9, color: p.accent, padding: "2px 6px", background: `${p.accent}20`, borderRadius: 4, textTransform: "uppercase", whiteSpace: "nowrap" }}>Coming Soon</span>}
                         </div>
                       </div>
                     </button>

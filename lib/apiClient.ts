@@ -33,6 +33,19 @@ export interface MessageResponse {
   created_at: string;
 }
 
+export interface UserMemory {
+  id: string;
+  user_id: string;
+  key: string;
+  value: string;
+  source: string;
+  status: "active" | "latent" | "user_reopened";
+  sensitivity_flag: boolean;
+  sessions_since_surfaced: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // ----------------------------------------------------------------
 // Core fetch wrapper
 // ----------------------------------------------------------------
@@ -163,6 +176,12 @@ export const authApi = {
       method: "POST", 
       body: JSON.stringify({ token, new_password }) 
     }),
+
+  changePassword: (payload: { old_password: string; new_password: string }) =>
+    apiFetch<void>("/api/v1/auth/change_password", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };
 
 // ----------------------------------------------------------------
@@ -209,4 +228,18 @@ export const chatApi = {
       body: JSON.stringify(payload),
     });
   },
+};
+
+// ----------------------------------------------------------------
+// Memory endpoints
+// ----------------------------------------------------------------
+export const memoryApi = {
+  getMemories: () => 
+    apiFetch<UserMemory[]>("/api/v1/memory"),
+
+  saveMemory: (payload: { key: string; value: string; source?: string; sensitivity_flag?: boolean }) =>
+    apiFetch<UserMemory>("/api/v1/memory", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
 };

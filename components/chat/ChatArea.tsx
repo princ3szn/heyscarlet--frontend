@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { chatApi } from "@/lib/apiClient";
+import { chatApi, authApi } from "@/lib/apiClient";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { WelcomeState } from "@/components/chat/WelcomeState";
 import { InputBar } from "@/components/chat/InputBar";
@@ -36,9 +36,20 @@ export function ChatArea({
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState("");
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [firstName, setFirstName] = useState("");
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Fetch the user's name quietly in the background for the Welcome State
+  useEffect(() => {
+    authApi.me()
+      .then((user) => {
+        if (user.first_name) setFirstName(user.first_name);
+        else if (user.username) setFirstName(user.username);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!conversationId) { setMessages([]); return; }
@@ -93,15 +104,11 @@ export function ChatArea({
 
     try {
       if (!activeConvId) {
-        // Extracts the first 40 characters for the title
         const generatedTitle = text.length > 40 ? text.slice(0, 40) + "..." : text;
-        
-        // FIX: Wrapped generatedTitle in an object to match apiClient expectations
         const conv = await chatApi.createConversation({ title: generatedTitle });
         activeConvId = conv.id;
         onConversationCreated(conv.id);
 
-        // Dispatches event to tell the Sidebar to instantly rename it
         window.dispatchEvent(new CustomEvent("chat-renamed", { detail: { id: conv.id, title: generatedTitle } }));
       }
 
@@ -156,7 +163,7 @@ export function ChatArea({
             ))}
           </div>
         ) : messages.length === 0 ? (
-          <WelcomeState onPrompt={handleSend} />
+          <WelcomeState onPrompt={handleSend} firstName={firstName} />
         ) : (
           <div style={{ maxWidth: 760, margin: "0 auto", paddingBottom: 40 }}>
             <motion.div layout transition={scrollSpring}>

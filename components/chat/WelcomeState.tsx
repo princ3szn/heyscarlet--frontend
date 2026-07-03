@@ -1,19 +1,44 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
 
 const SUGGESTED_PROMPTS = [
   "I keep starting things and not finishing them. Help me understand why.",
   "I have an idea I've been sitting on for two years. I don't know how to start.",
   "I feel stuck between where I am and where I want to be. Walk me through it.",
+  "There's a hard conversation I've been avoiding. Prepare me for it.",
+  "I know exactly what I need to do today, but I'm doing everything else. Why?",
+  "I feel like I'm running out of time to be who I thought I'd be.",
+  "I am exhausted, but I haven't actually accomplished anything. Dissect this.",
+  "I keep making the same mistake, expecting it to hurt less. Talk to me.",
+  "I have a decision to make, but I'm waiting for someone else to make it for me."
 ];
 
 interface WelcomeStateProps {
   onPrompt: (text: string) => void;
+  firstName?: string;
 }
 
-export function WelcomeState({ onPrompt }: WelcomeStateProps) {
+export function WelcomeState({ onPrompt, firstName }: WelcomeStateProps) {
+  const [greeting, setGreeting] = useState("Good to see you");
+  const [activePrompt, setActivePrompt] = useState("");
+
+  useEffect(() => {
+    // Time-based greeting
+    const hour = new Date().getHours();
+    if (hour < 12) setGreeting("Good morning");
+    else if (hour < 18) setGreeting("Good afternoon");
+    else setGreeting("Good evening");
+
+    // Pick a random prompt on client mount to avoid hydration mismatch
+    const randomIndex = Math.floor(Math.random() * SUGGESTED_PROMPTS.length);
+    setActivePrompt(SUGGESTED_PROMPTS[randomIndex]);
+  }, []);
+
+  const headingText = firstName ? `${greeting}, ${firstName}.` : `${greeting}.`;
+
   return (
     <div style={{
       flex: 1,
@@ -25,12 +50,12 @@ export function WelcomeState({ onPrompt }: WelcomeStateProps) {
       textAlign: "center",
     }}>
 
-      {/* Lemniscate with Dynamic Blend Mode */}
+      {/* Premium Lemniscate Reveal */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.2, ease: [0.2, 0.8, 0.2, 1] }}
-        style={{ marginBottom: 40 }}
+        initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
+        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+        transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
+        style={{ marginBottom: 48 }}
       >
         <motion.div
           animate={{
@@ -42,64 +67,74 @@ export function WelcomeState({ onPrompt }: WelcomeStateProps) {
             ],
           }}
           transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          style={{ mixBlendMode: "var(--glow-blend)" as any }}
         >
-          <TheLemniscate width={100} height={62} style={{ color: "var(--scarlet)" }} />
+          <TheLemniscate width={72} height={42} style={{ color: "var(--scarlet)" }} />
         </motion.div>
       </motion.div>
 
       {/* Heading */}
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1, duration: 0.9 }}
+        initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+        transition={{ delay: 0.3, duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
       >
         <div style={{
           fontFamily: "'Cormorant Garamond', serif",
-          fontSize: 30, fontWeight: 300,
+          fontSize: 36, fontWeight: 300,
           color: "var(--text-primary)",
-          lineHeight: 1.2, marginBottom: 10,
+          lineHeight: 1.2, marginBottom: 16,
+          letterSpacing: "-0.01em"
         }}>
-          Where do you want to start?
+          {headingText}
         </div>
         <div style={{
-          fontSize: 13, color: "var(--text-dim)",
-          lineHeight: 1.7, maxWidth: 340,
-          margin: "0 auto 36px", fontWeight: 300,
+          fontSize: 14, color: "var(--text-dim)",
+          lineHeight: 1.7, maxWidth: 420,
+          margin: "0 auto 56px", fontWeight: 300,
           fontFamily: "'DM Sans', sans-serif",
         }}>
-          Pick a prompt or write your own below.
+          The room is quiet. What have you been deferring?
         </div>
       </motion.div>
 
-      {/* Suggested prompts - High Contrast */}
-      <div style={{
-        display: "flex", flexDirection: "column", gap: 10,
-        width: "100%", maxWidth: 480,
-      }}>
-        {SUGGESTED_PROMPTS.map((prompt, i) => (
+      {/* Single Random Prompt Card */}
+      <AnimatePresence>
+        {activePrompt && (
           <motion.button
-            key={i}
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 + i * 0.1, duration: 0.7 }}
-            onClick={() => onPrompt(prompt)}
-            whileHover={{ borderColor: "var(--scarlet)", backgroundColor: "var(--msg-user-bg)", color: "var(--text-primary)" }}
+            initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ delay: 0.7, duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+            onClick={() => onPrompt(activePrompt)}
+            whileHover={{ 
+              borderColor: "var(--scarlet)", 
+              backgroundColor: "var(--msg-user-bg)", 
+              color: "var(--text-primary)",
+              scale: 1.02
+            }}
             whileTap={{ scale: 0.98 }}
             style={{
-              background: "var(--input-bg)",
-              border: "1px solid var(--input-border)",
-              borderRadius: 12, padding: "14px 16px",
-              cursor: "pointer", textAlign: "left",
+              background: "var(--surface-2)",
+              border: "1px solid var(--border-subtle)",
+              borderRadius: 16, padding: "24px 32px",
+              cursor: "pointer", textAlign: "center",
               fontFamily: "'DM Sans', sans-serif",
-              fontSize: 13, color: "var(--text-primary)",
-              lineHeight: 1.6, transition: "all 0.2s",
+              fontSize: 14, color: "var(--text-muted)",
+              lineHeight: 1.6, transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              maxWidth: 480, width: "100%",
+              boxShadow: "0 12px 32px rgba(0,0,0,0.12)"
             }}
           >
-            {prompt}
+            <span style={{ 
+              display: "block", fontSize: 10, letterSpacing: "0.15em", 
+              textTransform: "uppercase", color: "var(--scarlet)", 
+              marginBottom: 12, opacity: 0.8, fontWeight: 500
+            }}>
+              Observation
+            </span>
+            <span style={{ fontStyle: "italic" }}>"{activePrompt}"</span>
           </motion.button>
-        ))}
-      </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

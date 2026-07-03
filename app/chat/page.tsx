@@ -9,7 +9,7 @@ import type { PersonaId, Persona } from "@/components/chat/PersonaSwitcher";
 export default function ChatPage() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [personaId, setPersonaId] = useState<PersonaId>("scarlet");
 
   return (
