@@ -151,6 +151,18 @@ export const authApi = {
 
   completeOnboarding: () =>
     apiFetch<UserResponse>("/api/v1/auth/me/onboarding", { method: "PATCH" }),
+
+  forgotPassword: (email: string) => 
+    apiFetch<unknown>("/api/v1/auth/forgot_password", { 
+      method: "POST", 
+      body: JSON.stringify({ email }) 
+    }),
+    
+  resetPassword: (token: string, new_password: string) => 
+    apiFetch<unknown>("/api/v1/auth/reset_password", { 
+      method: "POST", 
+      body: JSON.stringify({ token, new_password }) 
+    }),
 };
 
 // ----------------------------------------------------------------
@@ -160,10 +172,10 @@ export const chatApi = {
   listConversations: () =>
     apiFetch<ConversationResponse[]>("/api/v1/chat/conversations"),
 
-  createConversation: (title?: string) =>
+  createConversation: (payload?: { title?: string }) =>
     apiFetch<ConversationResponse>("/api/v1/chat/conversations", {
       method: "POST",
-      body: JSON.stringify({ title: title ?? null }),
+      body: JSON.stringify({ title: payload?.title ?? null }),
     }),
 
   getMessages: (conversationId: string) =>
@@ -179,7 +191,14 @@ export const chatApi = {
    * consume the ReadableStream directly.
    */
   stream: async (payload: { message: string; conversation_id?: string }) => {
-    const token = getAccessToken();
+    let token = getAccessToken();
+    
+    // SECURITY FIX: If token is missing in memory (e.g. after a hard page refresh),
+    // silently grab a new one via the HttpOnly cookie before establishing the stream.
+    if (!token) {
+      token = await silentRefresh();
+    }
+
     return fetch(`${BASE_URL}/api/v1/chat/stream`, {
       method: "POST",
       credentials: "include",

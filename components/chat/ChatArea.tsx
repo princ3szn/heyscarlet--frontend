@@ -93,17 +93,16 @@ export function ChatArea({
 
     try {
       if (!activeConvId) {
-        const conv = await chatApi.createConversation();
+        // Extracts the first 40 characters for the title
+        const generatedTitle = text.length > 40 ? text.slice(0, 40) + "..." : text;
+        
+        // FIX: Wrapped generatedTitle in an object to match apiClient expectations
+        const conv = await chatApi.createConversation({ title: generatedTitle });
         activeConvId = conv.id;
         onConversationCreated(conv.id);
 
-        const generatedTitle = text.length > 40 ? text.slice(0, 40) + "..." : text;
-        try {
-          await (chatApi as any).updateConversation(conv.id, { title: generatedTitle });
-          window.dispatchEvent(new CustomEvent("chat-renamed", { detail: { id: conv.id, title: generatedTitle } }));
-        } catch (e) {
-          console.warn("Auto-name failed", e);
-        }
+        // Dispatches event to tell the Sidebar to instantly rename it
+        window.dispatchEvent(new CustomEvent("chat-renamed", { detail: { id: conv.id, title: generatedTitle } }));
       }
 
       const res = await chatApi.stream({ message: text, conversation_id: activeConvId });
@@ -191,7 +190,6 @@ export function ChatArea({
       </AnimatePresence>
 
       <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: "0 32px 32px", position: "relative", zIndex: 20 }}>
-        {/* THIS KEY FIXES THE BUG: It completely remounts the InputBar on a new chat, wiping the typed text. */}
         <InputBar 
           key={conversationId || "new-session"} 
           onSend={handleSend} 

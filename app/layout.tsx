@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { AuthProvider } from "@/lib/AuthProvider";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import "./globals.css"; 
 
 export const metadata: Metadata = {
   title: "HeyScarlet",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark" style={{
+    <html lang="en" data-theme="dark" suppressHydrationWarning style={{
       "--void": "#050505",
       "--surface": "#0A0A0A",
       "--surface-2": "#111111",
@@ -33,19 +34,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap"
           rel="stylesheet"
         />
-        <style>{`
-          *, *::before, *::after { box-sizing: border-box; }
-          html, body {
-            height: 100%;
-            background: var(--void);
-            color: var(--text-primary);
-            font-family: 'DM Sans', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            transition: background 0.35s, color 0.35s;
-          }
-        `}</style>
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <ThemeProvider>
           <AuthProvider>
             <ThemeToggle />

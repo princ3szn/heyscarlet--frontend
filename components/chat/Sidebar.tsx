@@ -18,7 +18,6 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
-// Apple-style spring physics
 const springTransition = { type: "spring", stiffness: 350, damping: 30 } as const;
 const menuSpring = { type: "spring", stiffness: 400, damping: 30 } as const;
 

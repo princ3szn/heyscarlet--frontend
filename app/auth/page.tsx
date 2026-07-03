@@ -25,13 +25,6 @@ function validateEmail(v: string): string {
   return "";
 }
 
-function validatePassword(v: string, isRegister = false): string {
-  if (!v) return "Password is required.";
-  if (isRegister && v.length < 8) return "Password must be at least 8 characters.";
-  if (v.length > 128) return "Password is too long.";
-  return "";
-}
-
 function validateName(v: string, label: string): string {
   if (!v.trim()) return `${label} is required.`;
   if (v.trim().length < 2) return `${label} must be at least 2 characters.`;
@@ -56,10 +49,12 @@ function sanitize(v: string): string {
 // Rate limiting helpers
 // ---------------------------------------------------------------
 function getAttempts(): number {
+  if (typeof window === 'undefined') return 0;
   try { return parseInt(sessionStorage.getItem(ATTEMPTS_KEY) ?? "0", 10); } catch { return 0; }
 }
 
 function incrementAttempts(): number {
+  if (typeof window === 'undefined') return 0;
   try {
     const n = getAttempts() + 1;
     sessionStorage.setItem(ATTEMPTS_KEY, String(n));
@@ -68,18 +63,22 @@ function incrementAttempts(): number {
 }
 
 function resetAttempts() {
+  if (typeof window === 'undefined') return;
   try { sessionStorage.removeItem(ATTEMPTS_KEY); } catch {}
 }
 
 function getLockoutExpiry(): number {
+  if (typeof window === 'undefined') return 0;
   try { return parseInt(sessionStorage.getItem(LOCKOUT_KEY) ?? "0", 10); } catch { return 0; }
 }
 
 function setLockout() {
+  if (typeof window === 'undefined') return;
   try { sessionStorage.setItem(LOCKOUT_KEY, String(Date.now() + LOCKOUT_DURATION_MS)); } catch {}
 }
 
 function isLockedOut(): boolean {
+  if (typeof window === 'undefined') return false;
   const expiry = getLockoutExpiry();
   if (expiry && Date.now() < expiry) return true;
   if (expiry) {
@@ -89,6 +88,7 @@ function isLockedOut(): boolean {
 }
 
 function lockoutRemainingSeconds(): number {
+  if (typeof window === 'undefined') return 0;
   const expiry = getLockoutExpiry();
   if (!expiry) return 0;
   return Math.max(0, Math.ceil((expiry - Date.now()) / 1000));
@@ -122,7 +122,7 @@ function EyeIcon({ open }: { open: boolean }) {
 }
 
 // ---------------------------------------------------------------
-// Input field
+// Reusable Input field with Cinematic Focus Glow
 // ---------------------------------------------------------------
 interface FieldProps {
   label: string;
@@ -142,6 +142,7 @@ function Field({
   error, onClearError, autoComplete, maxLength = 254,
 }: FieldProps) {
   const [showPw, setShowPw] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
   const [shaking, setShaking] = useState(false);
   const prevError = useRef("");
 
@@ -187,6 +188,8 @@ function Field({
           autoComplete={autoComplete}
           spellCheck={false}
           autoCapitalize="off"
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
           onChange={(e) => {
             onChange(e.target.value);
             if (error) onClearError();
@@ -194,20 +197,15 @@ function Field({
           style={{
             width: "100%",
             background: error ? "var(--msg-user-bg)" : "var(--input-bg)",
-            border: `1px solid ${error ? "var(--scarlet)" : "var(--input-border)"}`,
+            border: `1px solid ${error ? "var(--scarlet)" : isFocused ? "var(--scarlet)" : "var(--input-border)"}`,
             borderRadius: 9,
             padding: type === "password" ? "12px 42px 12px 14px" : "12px 14px",
             fontFamily: "'DM Sans', sans-serif",
             fontSize: 14,
             color: "var(--text-primary)",
             outline: "none",
-            transition: "border-color 0.2s, background 0.2s",
-          }}
-          onFocus={(e) => {
-            if (!error) e.target.style.borderColor = "var(--scarlet)";
-          }}
-          onBlur={(e) => {
-            if (!error) e.target.style.borderColor = "var(--input-border)";
+            boxShadow: isFocused && !error ? "0 0 0 3px rgba(192,57,43,0.15)" : "none",
+            transition: "all 0.3s ease",
           }}
         />
 
@@ -223,11 +221,11 @@ function Field({
               background: "none", border: "none",
               cursor: "pointer",
               color: "var(--text-dim)",
-              padding: 2,
+              padding: 4,
               display: "flex", alignItems: "center",
-              transition: "color 0.18s",
+              transition: "color 0.2s",
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--scarlet)")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-dim)")}
           >
             <EyeIcon open={showPw} />
@@ -268,9 +266,11 @@ function Field({
 // Lockout banner
 // ---------------------------------------------------------------
 function LockoutBanner() {
-  const [remaining, setRemaining] = useState(lockoutRemainingSeconds());
+  const [remaining, setRemaining] = useState(0); // FIX: Safe SSR initial state
 
   useEffect(() => {
+    // FIX: Only fetch from sessionStorage safely mounted on the client
+    setRemaining(lockoutRemainingSeconds());
     const interval = setInterval(() => {
       const r = lockoutRemainingSeconds();
       setRemaining(r);
@@ -278,6 +278,8 @@ function LockoutBanner() {
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  if (remaining <= 0) return null;
 
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
@@ -303,115 +305,6 @@ function LockoutBanner() {
 }
 
 // ---------------------------------------------------------------
-// Social buttons
-// ---------------------------------------------------------------
-function SocialButtons() {
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 20 }}>
-      <button
-        type="button"
-        style={{
-          background: "transparent",
-          border: "1px solid var(--border)",
-          borderRadius: 8, padding: "12px 0",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", transition: "all 0.2s",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "var(--hover-bg)";
-          e.currentTarget.style.borderColor = "var(--input-border)";
-          e.currentTarget.style.transform = "translateY(-2px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "transparent";
-          e.currentTarget.style.borderColor = "var(--border)";
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05" />
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
-        </svg>
-      </button>
-
-      <button
-        type="button"
-        style={{
-          background: "transparent", border: "1px solid var(--border)",
-          borderRadius: 8, padding: "12px 0",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", transition: "all 0.2s",
-          color: "var(--text-primary)",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "var(--hover-bg)";
-          e.currentTarget.style.borderColor = "var(--input-border)";
-          e.currentTarget.style.transform = "translateY(-2px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "transparent";
-          e.currentTarget.style.borderColor = "var(--border)";
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
-      >
-        <svg width="18" height="18" viewBox="0 0 384 512" fill="currentColor">
-          <path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z" />
-        </svg>
-      </button>
-
-      <button
-        type="button"
-        style={{
-          background: "transparent", border: "1px solid var(--border)",
-          borderRadius: 8, padding: "12px 0",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          cursor: "pointer", transition: "all 0.2s",
-          color: "var(--text-primary)",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.background = "var(--hover-bg)";
-          e.currentTarget.style.borderColor = "var(--input-border)";
-          e.currentTarget.style.transform = "translateY(-2px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.background = "transparent";
-          e.currentTarget.style.borderColor = "var(--border)";
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
-      >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
-        </svg>
-      </button>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------
-// Divider
-// ---------------------------------------------------------------
-function Divider({ label }: { label: string }) {
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: 12,
-      marginBottom: 20,
-    }}>
-      <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
-      <span style={{
-        fontSize: 10, color: "var(--text-dim)",
-        textTransform: "uppercase", letterSpacing: "0.1em",
-        fontFamily: "'DM Sans', sans-serif",
-      }}>
-        {label}
-      </span>
-      <div style={{ flex: 1, height: 1, background: "var(--border-subtle)" }} />
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------
 // Login form
 // ---------------------------------------------------------------
 function LoginForm() {
@@ -423,9 +316,13 @@ function LoginForm() {
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [locked, setLocked] = useState(isLockedOut());
+  const [locked, setLocked] = useState(false); // FIX: Safe SSR initial state
 
-  // Check lockout periodically
+  // FIX: Check lockout status only after mounting to fix hydration mismatch
+  useEffect(() => {
+    setLocked(isLockedOut());
+  }, []);
+
   useEffect(() => {
     if (!locked) return;
     const interval = setInterval(() => {
@@ -438,7 +335,7 @@ function LoginForm() {
   }, [locked]);
 
   function validate(): boolean {
-    const e = { email: validateEmail(email), password: validatePassword(password) };
+    const e = { email: validateEmail(email), password: !password ? "Password is required." : "" };
     setErrors(e);
     return !e.email && !e.password;
   }
@@ -480,7 +377,7 @@ function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate autoComplete="on">
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 32 }}>
         <div style={{
           fontFamily: "'Cormorant Garamond', serif",
           fontSize: 32, fontWeight: 300,
@@ -490,12 +387,9 @@ function LoginForm() {
           Welcome back.
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
-          Scarlet has been waiting for you.
+          Scarlet has been waiting for you. Enter your details to return to the room.
         </div>
       </div>
-
-      <SocialButtons />
-      <Divider label="Or continue with email" />
 
       {locked && <LockoutBanner />}
 
@@ -532,12 +426,12 @@ function LoginForm() {
         autoComplete="current-password" maxLength={128}
       />
 
-      <div style={{ textAlign: "right", marginBottom: 20, marginTop: -8 }}>
+      <div style={{ textAlign: "right", marginBottom: 24, marginTop: -4 }}>
         <a href="/forgot-password" style={{
           fontSize: 12, color: "var(--text-dim)",
-          textDecoration: "none", transition: "color 0.18s",
+          textDecoration: "none", transition: "color 0.2s",
         }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--scarlet)")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-dim)")}
         >
           Forgot password?
@@ -558,7 +452,7 @@ function LoginForm() {
           cursor: loading || locked ? "not-allowed" : "pointer",
           opacity: loading || locked ? 0.5 : 1,
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 24px rgba(192,57,43,0.28)",
+          boxShadow: "0 8px 24px rgba(192,57,43,0.3)",
           transition: "opacity 0.2s",
         }}
       >
@@ -589,12 +483,36 @@ function RegisterForm() {
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  
+  // Password state for the cinematic strength meter
   const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [isPwFocused, setIsPwFocused] = useState(false);
+
   const [errors, setErrors] = useState({
     firstName: "", lastName: "", username: "", email: "", password: "",
   });
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+
+  // Strict Password Complexity Rules
+  const criteria = [
+    { id: "length", label: "At least 8 characters", met: password.length >= 8 },
+    { id: "upper", label: "One uppercase letter", met: /[A-Z]/.test(password) },
+    { id: "lower", label: "One lowercase letter", met: /[a-z]/.test(password) },
+    { id: "num", label: "One number", met: /[0-9]/.test(password) },
+    { id: "spec", label: "One special character", met: /[^A-Za-z0-9]/.test(password) },
+  ];
+
+  const score = criteria.filter(c => c.met).length;
+  const allMet = score === criteria.length;
+
+  let strengthColor = "var(--border)";
+  let strengthLabel = "Weak";
+  if (score >= 2) { strengthColor = "#F59E0B"; strengthLabel = "Fair"; }
+  if (score >= 4) { strengthColor = "#3B82F6"; strengthLabel = "Good"; }
+  if (score === 5) { strengthColor = "#27AE60"; strengthLabel = "Strong"; }
+  if (password.length === 0) strengthLabel = "";
 
   function validate(): boolean {
     const e = {
@@ -602,7 +520,7 @@ function RegisterForm() {
       lastName: validateName(lastName, "Last name"),
       username: validateUsername(username),
       email: validateEmail(email),
-      password: validatePassword(password, true),
+      password: !allMet ? "Please fulfill all password requirements." : "",
     };
     setErrors(e);
     return Object.values(e).every((v) => !v);
@@ -634,7 +552,7 @@ function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} noValidate autoComplete="on">
-      <div style={{ marginBottom: 28 }}>
+      <div style={{ marginBottom: 32 }}>
         <div style={{
           fontFamily: "'Cormorant Garamond', serif",
           fontSize: 32, fontWeight: 300,
@@ -644,12 +562,9 @@ function RegisterForm() {
           Commit to it.
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.6 }}>
-          Create your profile and start the work.
+          Create your profile and secure your access to the room.
         </div>
       </div>
-
-      <SocialButtons />
-      <Divider label="Or register with email" />
 
       {serverError && (
         <motion.div
@@ -696,28 +611,86 @@ function RegisterForm() {
         autoComplete="email" maxLength={254}
       />
 
-      <Field
-        label="Password" id="r-password" type="password"
-        placeholder="Min. 8 characters" value={password} onChange={setPassword}
-        error={errors.password} onClearError={() => setErrors((e) => ({ ...e, password: "" }))}
-        autoComplete="new-password" maxLength={128}
-      />
+      {/* Cinematic Password Setup */}
+      <div style={{ marginBottom: 32 }}>
+        <label style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
+          <span style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--text-muted)", fontFamily: "'DM Sans', sans-serif" }}>Secure Password</span>
+          <span style={{ fontSize: 11, color: strengthColor, fontWeight: 500, transition: "color 0.3s" }}>{strengthLabel}</span>
+        </label>
+        
+        <div style={{ position: "relative", marginBottom: 12 }}>
+          <input
+            id="r-password"
+            type={showPw ? "text" : "password"}
+            value={password}
+            onChange={(e) => { setPassword(e.target.value); setErrors(err => ({ ...err, password: "" })); }}
+            onFocus={() => setIsPwFocused(true)}
+            onBlur={() => setIsPwFocused(false)}
+            placeholder="Create a strong key"
+            disabled={loading}
+            style={{
+              width: "100%", background: errors.password ? "var(--msg-user-bg)" : "var(--input-bg)",
+              border: `1px solid ${errors.password ? "var(--scarlet)" : isPwFocused ? "var(--scarlet)" : "var(--input-border)"}`,
+              borderRadius: 9, padding: "12px 42px 12px 14px", fontSize: 14, color: "var(--text-primary)", outline: "none",
+              boxShadow: isPwFocused && !errors.password ? "0 0 0 3px rgba(192,57,43,0.15)" : "none",
+              transition: "all 0.3s ease", fontFamily: "'DM Sans', sans-serif"
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPw(!showPw)}
+            style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "var(--text-dim)", cursor: "pointer", display: "flex", alignItems: "center", padding: 4, transition: "color 0.2s" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-dim)")}
+          >
+            <EyeIcon open={showPw} />
+          </button>
+        </div>
+
+        {/* Strength Meter Bars */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+          {[...Array(5)].map((_, i) => (
+            <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < score ? strengthColor : "var(--border)", transition: "background 0.3s ease" }} />
+          ))}
+        </div>
+
+        {/* Requirements Checklist */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 8 }}>
+          {criteria.map((c) => (
+            <div key={c.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontFamily: "'DM Sans', sans-serif", color: c.met ? "var(--text-primary)" : "var(--text-dim)", transition: "color 0.3s" }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ color: c.met ? "#27AE60" : "transparent" }}>
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              {c.label}
+            </div>
+          ))}
+        </div>
+
+        <AnimatePresence>
+          {errors.password && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} style={{ fontSize: 11, color: "var(--scarlet)", display: "flex", alignItems: "center", gap: 5, marginTop: 10, overflow: "hidden" }}>
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+              {errors.password}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       <motion.button
         type="submit"
-        disabled={loading}
-        whileHover={{ opacity: loading ? 1 : 0.88 }}
-        whileTap={{ scale: loading ? 1 : 0.97 }}
+        disabled={loading || !allMet}
+        whileHover={{ opacity: loading || !allMet ? 1 : 0.88 }}
+        whileTap={{ scale: loading || !allMet ? 1 : 0.97 }}
         style={{
           width: "100%", padding: "14px", marginTop: 4,
           background: "linear-gradient(135deg, var(--scarlet-deep), var(--scarlet))",
           border: "none", borderRadius: 10,
           fontFamily: "'DM Sans', sans-serif", fontSize: 14, fontWeight: 500,
           color: "#fff", letterSpacing: "0.04em",
-          cursor: loading ? "not-allowed" : "pointer",
-          opacity: loading ? 0.5 : 1,
+          cursor: loading || !allMet ? "not-allowed" : "pointer",
+          opacity: loading || !allMet ? 0.5 : 1,
           display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 4px 24px rgba(192,57,43,0.28)",
+          boxShadow: "0 8px 24px rgba(192,57,43,0.3)",
           transition: "opacity 0.2s",
         }}
       >
@@ -735,7 +708,7 @@ function RegisterForm() {
       </motion.button>
 
       <p style={{
-        marginTop: 16, fontSize: 11, color: "var(--text-dim)",
+        marginTop: 20, fontSize: 11, color: "var(--text-dim)",
         textAlign: "center", lineHeight: 1.8,
         fontFamily: "'DM Sans', sans-serif",
       }}>
@@ -802,9 +775,11 @@ export default function AuthPage() {
 
   return (
     <>
+      {/* 
+        FIX: Removed the global `html, body { overflow: hidden; }`
+        This ensures the landing page scroll isn't broken when navigating away!
+      */}
       <style>{`
-        html, body { height: 100vh; overflow: hidden; }
-
         @keyframes breatheSignal {
           0%   { transform: translate(-50%, -50%) scale(0.9) rotate(-5deg); opacity: 0.2; }
           100% { transform: translate(-50%, -50%) scale(1.05) rotate(5deg); opacity: 0.4; }
@@ -817,34 +792,34 @@ export default function AuthPage() {
           from { opacity: 0; transform: translateY(40px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes hs-spin {
-          to { transform: rotate(360deg); }
+        .auth-container {
+          display: grid;
+          grid-template-columns: 1.3fr 1fr;
         }
-
-        body::after {
-          content: "";
-          position: fixed; top: 0; left: 0;
-          width: 100vw; height: 100vh;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          opacity: 0.035; pointer-events: none; z-index: 9999;
-        }
-
-        .auth-scroll::-webkit-scrollbar { width: 3px; }
-        .auth-scroll::-webkit-scrollbar-thumb { background: var(--scarlet-glow); border-radius: 2px; }
+        .auth-scroll::-webkit-scrollbar { width: 4px; }
+        .auth-scroll::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
 
         @media (max-width: 768px) {
+          .auth-container { grid-template-columns: 1fr; }
           .auth-hero { display: none !important; }
-          .auth-form-panel { width: 100% !important; }
         }
       `}</style>
 
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1.3fr 1fr",
+      {/* FIX: Moved overflow: hidden here so it only locks scrolling ON this page, not globally */}
+      <div className="auth-container" style={{
         height: "100vh",
         background: "var(--void)",
         fontFamily: "'DM Sans', sans-serif",
+        overflow: "hidden", 
+        position: "relative"
       }}>
+
+        {/* Global Noise Layer (Moved off body tag to prevent DOM mismatch) */}
+        <div style={{
+          position: "absolute", inset: 0,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+          opacity: 0.035, pointerEvents: "none", zIndex: 9999
+        }} />
 
         {/* LEFT — Hero panel */}
         <div
@@ -852,7 +827,7 @@ export default function AuthPage() {
           className="auth-hero"
           style={{
             position: "relative",
-            background: "var(--void)",
+            background: "transparent",
             display: "flex",
             flexDirection: "column",
             justifyContent: "center",
@@ -870,7 +845,7 @@ export default function AuthPage() {
             opacity: 0,
             animation: "authFadeUp 1.5s cubic-bezier(0.2,0.8,0.2,1) 0.2s forwards",
           }}>
-            <TheLemniscate width={52} height={30} />
+            <TheLemniscate width={52} height={30} style={{ color: "var(--text-primary)" }} />
             <div style={{
               fontFamily: "'Cormorant Garamond', serif",
               fontSize: 22, fontWeight: 300, color: "var(--text-primary)",
@@ -896,8 +871,8 @@ export default function AuthPage() {
               animation: "breatheSignal 18s ease-in-out infinite alternate",
             }}
           >
-            <div style={{ width: "100%", height: "100%", animation: "floatSignal 40s linear infinite" }}>
-              <TheLemniscate width={800} height={450} />
+            <div style={{ width: "100%", height: "100%", animation: "floatSignal 40s linear infinite", color: "var(--text-primary)" }}>
+              <TheLemniscate width={800} height={800} />
             </div>
           </div>
 
@@ -931,13 +906,22 @@ export default function AuthPage() {
           className="auth-scroll"
           style={{
             background: "var(--surface)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            padding: 40, overflowY: "auto",
+            display: "flex", 
+            flexDirection: "column",
+            padding: 40, 
+            overflowY: "auto",
             transition: "background 0.4s",
+            position: "relative",
+            zIndex: 10
           }}
         >
+          {/* FIX: margin "auto" centers it perfectly, but allows normal scrolling when the form gets tall! */}
           <div style={{
-            width: "100%", maxWidth: 400,
+            margin: "auto",
+            width: "100%", maxWidth: 420,
+            paddingTop: 20,
+            paddingBottom: 20,
+            flexShrink: 0,
             opacity: 0,
             animation: "authFadeUp 1.2s cubic-bezier(0.2,0.8,0.2,1) 0.6s forwards",
           }}>
@@ -947,7 +931,7 @@ export default function AuthPage() {
               display: "flex",
               background: "var(--input-bg)",
               borderRadius: 12, padding: 6,
-              marginBottom: 32,
+              marginBottom: 40,
               border: "1px solid var(--border-subtle)",
               position: "relative",
             }}>
