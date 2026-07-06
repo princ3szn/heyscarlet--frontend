@@ -775,11 +775,10 @@ export default function AuthPage() {
 
   return (
     <>
-      {/* 
-        FIX: Removed the global `html, body { overflow: hidden; }`
-        This ensures the landing page scroll isn't broken when navigating away!
-      */}
-      <style>{`
+      {/* FIX: dangerouslySetInnerHTML stops React from converting quotes into &quot; on the server */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        html, body { height: 100vh; overflow: hidden; background: var(--void); }
+
         @keyframes breatheSignal {
           0%   { transform: translate(-50%, -50%) scale(0.9) rotate(-5deg); opacity: 0.2; }
           100% { transform: translate(-50%, -50%) scale(1.05) rotate(5deg); opacity: 0.4; }
@@ -792,25 +791,30 @@ export default function AuthPage() {
           from { opacity: 0; transform: translateY(40px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        .auth-container {
-          display: grid;
-          grid-template-columns: 1.3fr 1fr;
+
+        body::after {
+          content: "";
+          position: fixed; top: 0; left: 0;
+          width: 100vw; height: 100vh;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          opacity: 0.035; pointer-events: none; z-index: 9999;
         }
+
         .auth-scroll::-webkit-scrollbar { width: 4px; }
         .auth-scroll::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
 
         @media (max-width: 768px) {
-          .auth-container { grid-template-columns: 1fr; }
           .auth-hero { display: none !important; }
+          .auth-form-panel { width: 100% !important; }
         }
-      `}</style>
+      `}} />
 
-      {/* FIX: Moved overflow: hidden here so it only locks scrolling ON this page, not globally */}
-      <div className="auth-container" style={{
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "1.3fr 1fr",
         height: "100vh",
         background: "var(--void)",
         fontFamily: "'DM Sans', sans-serif",
-        overflow: "hidden", 
         position: "relative"
       }}>
 

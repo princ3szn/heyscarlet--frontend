@@ -210,6 +210,20 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
       .finally(() => setLoading(false));
   }, [activeId, logout, router]);
 
+  // NEW FIX: Sync document title & dispatch event for top bar
+  useEffect(() => {
+    const activeConv = conversations.find(c => c.id === activeId);
+    const currentTitle = activeConv?.title || "New Session";
+    
+    // Update the browser tab
+    if (typeof window !== "undefined") {
+      document.title = activeId ? `${currentTitle} | HeyScarlet` : "HeyScarlet";
+      
+      // Dispatch event to update the top bar in the ChatPage
+      window.dispatchEvent(new CustomEvent("chat-active-title", { detail: currentTitle }));
+    }
+  }, [activeId, conversations]);
+
   useEffect(() => {
     const handleRenamed = (e: Event) => {
       const customEvent = e as CustomEvent<{ id: string, title: string }>;
@@ -357,7 +371,6 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
               </svg>
             </motion.button>
 
-            {/* Gemini-style Tooltip */}
             <AnimatePresence>
               {showTooltip && (
                 <motion.div

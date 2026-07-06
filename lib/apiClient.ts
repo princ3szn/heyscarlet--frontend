@@ -88,10 +88,10 @@ async function silentRefresh(): Promise<string | null> {
 
 /**
  * Wraps fetch with:
- *   1. Automatic Authorization header injection
- *   2. credentials: "include" on every request (sends the cookie)
- *   3. One silent refresh attempt on 401, then retry
- *   4. Redirect to /auth if refresh also fails
+ * 1. Automatic Authorization header injection
+ * 2. credentials: "include" on every request (sends the cookie)
+ * 3. One silent refresh attempt on 401, then retry
+ * 4. Redirect to /auth if refresh also fails
  */
 export async function apiFetch<T = unknown>(
   path: string,
@@ -110,7 +110,8 @@ export async function apiFetch<T = unknown>(
 
   let res = await makeRequest(getAccessToken());
 
-  if (res.status === 401) {
+  // FIX: Added !path.includes("/login") so it doesn't refresh the page on bad passwords
+  if (res.status === 401 && !path.includes("/login")) {
     const newToken = await silentRefresh();
 
     if (!newToken) {

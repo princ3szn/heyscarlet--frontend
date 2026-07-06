@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/chat/Sidebar";
 import { ChatArea } from "@/components/chat/ChatArea";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
@@ -11,6 +11,38 @@ export default function ChatPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [personaId, setPersonaId] = useState<PersonaId>("scarlet");
+
+  // Track the active title for the top bar and a key to reset the chat area
+  const [resetKey, setResetKey] = useState(0);
+  const [activeTitle, setActiveTitle] = useState("New Session");
+
+  // Listen for title changes from the Sidebar or auto-names from ChatArea
+  useEffect(() => {
+    const handleTitleUpdate = (e: Event) => {
+      setActiveTitle((e as CustomEvent<string>).detail);
+    };
+    const handleRenamed = (e: Event) => {
+      const detail = (e as CustomEvent<{id: string, title: string}>).detail;
+      if (detail.id === activeConversationId) {
+        setActiveTitle(detail.title);
+        document.title = `${detail.title} | HeyScarlet`;
+      }
+    };
+
+    window.addEventListener("chat-active-title", handleTitleUpdate);
+    window.addEventListener("chat-renamed", handleRenamed);
+    return () => {
+      window.removeEventListener("chat-active-title", handleTitleUpdate);
+      window.removeEventListener("chat-renamed", handleRenamed);
+    };
+  }, [activeConversationId]);
+
+  const handleNewChat = () => {
+    setActiveConversationId(null);
+    setActiveTitle("New Session");
+    document.title = "HeyScarlet";
+    setResetKey(prev => prev + 1);
+  };
 
   return (
     <>
@@ -44,6 +76,8 @@ export default function ChatPage() {
           background: "var(--scarlet-glow)",
           animation: "hs-chat-morph 25s linear infinite",
           filter: "blur(80px)", pointerEvents: "none", zIndex: 0,
+          mixBlendMode: "var(--glow-blend)" as any,
+          transition: "background 0.35s",
         }} />
 
         {/* CRITICAL FIX: Wrapping Sidebar in high zIndex to fix Profile overlap */}
@@ -51,7 +85,7 @@ export default function ChatPage() {
           <Sidebar
             activeId={activeConversationId}
             onSelect={setActiveConversationId}
-            onNewChat={() => setActiveConversationId(null)}
+            onNewChat={handleNewChat}
             mobileOpen={mobileMenuOpen}
             onMobileClose={() => setMobileMenuOpen(false)}
             collapsed={sidebarCollapsed}
@@ -105,8 +139,12 @@ export default function ChatPage() {
               fontSize: 11, color: "var(--text-faint)",
               letterSpacing: "0.06em", textTransform: "uppercase",
               fontFamily: "'DM Sans', sans-serif",
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              maxWidth: 200
             }}>
-              {activeConversationId ? "Conversation" : "New conversation"}
+              {activeConversationId ? activeTitle : "New Session"}
             </div>
 
             <div />
@@ -114,6 +152,7 @@ export default function ChatPage() {
 
           {/* Chat area */}
           <ChatArea
+            key={`chat-area-${activeConversationId || resetKey}`}
             conversationId={activeConversationId}
             onConversationCreated={(id) => setActiveConversationId(id)}
             personaId={personaId}
