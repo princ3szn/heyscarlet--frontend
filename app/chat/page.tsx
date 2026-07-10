@@ -12,11 +12,20 @@ export default function ChatPage() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [personaId, setPersonaId] = useState<PersonaId>("scarlet");
 
-  // Track the active title for the top bar and a key to reset the chat area
   const [resetKey, setResetKey] = useState(0);
   const [activeTitle, setActiveTitle] = useState("New Session");
+  const [isRestoring, setIsRestoring] = useState(true);
 
-  // Listen for title changes from the Sidebar or auto-names from ChatArea
+  // FIX: Restore active chat session from localStorage on refresh
+  useEffect(() => {
+    const savedChatId = localStorage.getItem("hs_active_chat");
+    if (savedChatId) {
+      setActiveConversationId(savedChatId);
+    }
+    setIsRestoring(false);
+  }, []);
+
+  // Update title based on events
   useEffect(() => {
     const handleTitleUpdate = (e: Event) => {
       setActiveTitle((e as CustomEvent<string>).detail);
@@ -37,12 +46,23 @@ export default function ChatPage() {
     };
   }, [activeConversationId]);
 
+  // FIX: Centralized handler to save to state and localStorage simultaneously
+  const handleChatSelect = (id: string) => {
+    setActiveConversationId(id);
+    localStorage.setItem("hs_active_chat", id);
+  };
+
   const handleNewChat = () => {
     setActiveConversationId(null);
+    localStorage.removeItem("hs_active_chat");
     setActiveTitle("New Session");
     document.title = "HeyScarlet";
     setResetKey(prev => prev + 1);
   };
+
+  if (isRestoring) {
+    return <div style={{ height: "100vh", background: "var(--void)" }} />; // Prevents flashing Welcome Screen
+  }
 
   return (
     <>
@@ -69,7 +89,6 @@ export default function ChatPage() {
         transition: "background 0.35s, color 0.35s",
       }}>
 
-        {/* Ambient glow */}
         <div style={{
           position: "fixed", top: "-10%", left: "30%",
           width: 500, height: 500,
@@ -80,11 +99,10 @@ export default function ChatPage() {
           transition: "background 0.35s",
         }} />
 
-        {/* CRITICAL FIX: Wrapping Sidebar in high zIndex to fix Profile overlap */}
         <div style={{ position: "relative", zIndex: 50, display: "flex" }}>
           <Sidebar
             activeId={activeConversationId}
-            onSelect={setActiveConversationId}
+            onSelect={handleChatSelect}
             onNewChat={handleNewChat}
             mobileOpen={mobileMenuOpen}
             onMobileClose={() => setMobileMenuOpen(false)}
@@ -93,14 +111,12 @@ export default function ChatPage() {
           />
         </div>
 
-        {/* Main */}
         <div style={{
           flex: 1, display: "flex", flexDirection: "column",
           overflow: "hidden", position: "relative", zIndex: 1,
           transition: "background 0.35s",
         }}>
 
-          {/* Top bar */}
           <div style={{
             height: 54,
             borderBottom: "1px solid var(--border-subtle)",
@@ -150,11 +166,10 @@ export default function ChatPage() {
             <div />
           </div>
 
-          {/* Chat area */}
           <ChatArea
-            key={`chat-area-${activeConversationId || resetKey}`}
+            key={`chat-area-${resetKey}`}
             conversationId={activeConversationId}
-            onConversationCreated={(id) => setActiveConversationId(id)}
+            onConversationCreated={handleChatSelect}
             personaId={personaId}
             onPersonaSwitch={(p: Persona) => setPersonaId(p.id)}
           />

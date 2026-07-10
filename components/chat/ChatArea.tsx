@@ -25,6 +25,13 @@ interface LocalMessage {
 
 const scrollSpring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
+function generateCleanSummary(text: string): string {
+  let clean = text.replace(/^(hey|hi|hello|scarlet|i keep|i am|i feel|i have|there is|there's|help me|can you|please|so basically|i've been|i just|okay|so|well)\s+/gi, "");
+  clean = clean.trim().charAt(0).toUpperCase() + clean.trim().slice(1);
+  const words = clean.split(/\s+/).slice(0, 4).join(" ").replace(/[^\w\s]+$/, "");
+  return words ? `${words}...` : "New Session";
+}
+
 export function ChatArea({
   conversationId,
   onConversationCreated,
@@ -40,8 +47,8 @@ export function ChatArea({
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isCreatingRef = useRef(false);
 
-  // Fetch the user's name quietly in the background for the Welcome State
   useEffect(() => {
     authApi.me()
       .then((user) => {
@@ -53,6 +60,12 @@ export function ChatArea({
 
   useEffect(() => {
     if (!conversationId) { setMessages([]); return; }
+
+    if (isCreatingRef.current) {
+      isCreatingRef.current = false;
+      return;
+    }
+
     setLoading(true);
     setError("");
     chatApi.getMessages(conversationId)
@@ -87,6 +100,35 @@ export function ChatArea({
     setShowScrollBtn(false);
   }
 
+  function handleEditMessage(messageId: string, newContent: string) {
+    if (streaming) return;
+    const index = messages.findIndex(m => m.id === messageId);
+    if (index === -1) return;
+    
+    setMessages(prev => prev.slice(0, index));
+    handleSend(newContent);
+  }
+
+  function handleReloadMessage(messageId: string) {
+    if (streaming) return;
+    const index = messages.findIndex(m => m.id === messageId);
+    if (index === -1) return;
+    
+    const targetMsg = messages[index];
+    
+    if (targetMsg.role === "user") {
+      setMessages(prev => prev.slice(0, index));
+      handleSend(targetMsg.content);
+    } else {
+      const userMsgIndex = index - 1;
+      if (userMsgIndex >= 0 && messages[userMsgIndex].role === "user") {
+        const contentToResend = messages[userMsgIndex].content;
+        setMessages(prev => prev.slice(0, userMsgIndex));
+        handleSend(contentToResend);
+      }
+    }
+  }
+
   async function handleSend(text: string) {
     if (streaming) return;
     setError("");
@@ -104,7 +146,8 @@ export function ChatArea({
 
     try {
       if (!activeConvId) {
-        const generatedTitle = text.length > 40 ? text.slice(0, 40) + "..." : text;
+        isCreatingRef.current = true;
+        const generatedTitle = generateCleanSummary(text);
         const conv = await chatApi.createConversation({ title: generatedTitle });
         activeConvId = conv.id;
         onConversationCreated(conv.id);
@@ -113,37 +156,96 @@ export function ChatArea({
       }
 
       const res = await chatApi.stream({ message: text, conversation_id: activeConvId });
+      
+      if (res.status === 429) {
+        setError("I need a moment to process. Please wait 60 seconds and try again.");
+        setMessages((prev) => prev.filter((m) => m.id !== scarletId));
+        setStreaming(false);
+        return;
+      }
+
       if (!res.ok) throw new Error("Stream failed");
+
+      const contentType = res.headers.get("content-type") || "";
+      const isSSE = contentType.includes("text/event-stream");
+      
+      if (contentType.includes("application/json")) {
+        const data = await res.json();
+        const content = data.content || data.message || data.text || data.response || "No response content found.";
+        setMessages((prev) => prev.map((m) => m.id === scarletId ? { ...m, content } : m));
+        return;
+      }
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       if (!reader) throw new Error("No reader");
 
       let buffer = "";
+      
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        buffer += decoder.decode(value, { stream: true });
+        
+        const chunk = decoder.decode(value, { stream: true });
+        
+        if (!isSSE) {
+          setMessages((prev) => prev.map((m) => m.id === scarletId ? { ...m, content: m.content + chunk } : m));
+          continue;
+        }
+
+        buffer += chunk;
         const lines = buffer.split("\n");
         buffer = lines.pop() ?? "";
+        let chunkAppended = "";
+
         for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            const data = line.slice(6).trim();
+          if (line.startsWith("data:")) {
+            let data = line.slice(5);
+            if (data.startsWith(" ")) data = data.slice(1);
+            data = data.replace(/\r$/, ""); 
+            
             if (data === "[DONE]") continue;
+            if (!data) continue;
+            
             try {
               const parsed = JSON.parse(data);
-              const token = parsed?.text ?? parsed?.delta ?? "";
-              if (typeof token === "string" && token) {
-                setMessages((prev) => prev.map((m) => m.id === scarletId ? { ...m, content: m.content + token } : m));
+              let token = "";
+              
+              if (typeof parsed === "string") {
+                token = parsed;
+              } else if (parsed?.choices?.[0]?.delta?.content !== undefined) {
+                token = parsed.choices[0].delta.content;
+              } else if (parsed?.choices?.[0]?.text !== undefined) {
+                token = parsed.choices[0].text;
+              } else if (parsed?.message !== undefined) {
+                token = parsed.message;
+              } else if (parsed?.response !== undefined) {
+                token = parsed.response;
+              } else if (parsed?.text !== undefined) {
+                token = parsed.text;
+              } else if (parsed?.content !== undefined) {
+                token = parsed.content;
               }
+
+              // Always append exactly what the token is, even if it's just " " or "\n"
+              chunkAppended += token;
+
             } catch {
-              if (data) setMessages((prev) => prev.map((m) => m.id === scarletId ? { ...m, content: m.content + data } : m));
+              chunkAppended += data;
             }
+          } else if (line.trim() !== "" && !line.startsWith("event:") && !line.startsWith("id:") && !line.startsWith("retry:")) {
+            chunkAppended += "\n" + line;
           }
         }
+
+        if (chunkAppended) {
+          const cleanText = chunkAppended.replace(/\\n/g, "\n");
+          setMessages((prev) => prev.map((m) => m.id === scarletId ? { ...m, content: m.content + cleanText } : m));
+        }
       }
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (e) {
+      console.error("Stream interrupted", e);
+      setError("Connection interrupted. Please try again.");
       setMessages((prev) => prev.filter((m) => m.id !== scarletId));
     } finally {
       setMessages((prev) => prev.map((m) => m.id === scarletId ? { ...m, isStreaming: false } : m));
@@ -169,7 +271,14 @@ export function ChatArea({
             <motion.div layout transition={scrollSpring}>
               <AnimatePresence initial={false} mode="popLayout">
                 {messages.map((m) => (
-                  <MessageBubble key={m.id} role={m.role} content={m.content} isStreaming={m.isStreaming} />
+                  <MessageBubble 
+                    key={m.id} 
+                    role={m.role} 
+                    content={m.content} 
+                    isStreaming={m.isStreaming} 
+                    onEdit={(newContent) => handleEditMessage(m.id, newContent)}
+                    onReload={() => handleReloadMessage(m.id)}
+                  />
                 ))}
               </AnimatePresence>
             </motion.div>

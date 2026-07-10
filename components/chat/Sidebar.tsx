@@ -100,9 +100,11 @@ function UserMenu({ user, collapsed, onSignOut, onOpenSettings }: { user: UserRe
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
             transition={menuSpring}
             style={{
-              position: "absolute", bottom: "calc(100% + 6px)", left: collapsed ? "calc(100% + 10px)" : 0, 
+              position: collapsed ? "fixed" : "absolute", 
+              bottom: collapsed ? 24 : "calc(100% + 6px)", 
+              left: collapsed ? 80 : 0, 
               minWidth: 220, background: "var(--surface-2)", border: "1px solid var(--border)",
-              borderRadius: 14, overflow: "hidden", boxShadow: "0 16px 40px rgba(0,0,0,0.4)", zIndex: 9999,
+              borderRadius: 14, overflow: "hidden", boxShadow: "0 16px 40px rgba(0,0,0,0.4)", zIndex: 999999,
             }}
           >
             <div style={{ padding: "14px 16px 12px", borderBottom: "1px solid var(--border-subtle)" }}>
@@ -287,7 +289,7 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
       transition={snappySpring}
       style={{
         height: "100vh", background: "var(--sidebar-bg)", borderRight: "1px solid var(--border-subtle)",
-        display: "flex", flexDirection: "column", overflow: "hidden", flexShrink: 0,
+        display: "flex", flexDirection: "column", overflow: "visible", flexShrink: 0,
       }}
     >
       {/* Header Area - ALIGNMENT FIX */}

@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+
+import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
@@ -266,10 +267,9 @@ function Field({
 // Lockout banner
 // ---------------------------------------------------------------
 function LockoutBanner() {
-  const [remaining, setRemaining] = useState(0); // FIX: Safe SSR initial state
+  const [remaining, setRemaining] = useState(0); 
 
   useEffect(() => {
-    // FIX: Only fetch from sessionStorage safely mounted on the client
     setRemaining(lockoutRemainingSeconds());
     const interval = setInterval(() => {
       const r = lockoutRemainingSeconds();
@@ -309,16 +309,15 @@ function LockoutBanner() {
 // ---------------------------------------------------------------
 function LoginForm() {
   const router = useRouter();
-  const setAccessToken = useAuthStore((s) => s.setAccessToken);
+  const setAccessToken = useAuthStore((s: any) => s.setAccessToken);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
-  const [locked, setLocked] = useState(false); // FIX: Safe SSR initial state
+  const [locked, setLocked] = useState(false); 
 
-  // FIX: Check lockout status only after mounting to fix hydration mismatch
   useEffect(() => {
     setLocked(isLockedOut());
   }, []);
@@ -477,14 +476,13 @@ function LoginForm() {
 // ---------------------------------------------------------------
 function RegisterForm() {
   const router = useRouter();
-  const setAccessToken = useAuthStore((s) => s.setAccessToken);
+  const setAccessToken = useAuthStore((s: any) => s.setAccessToken);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   
-  // Password state for the cinematic strength meter
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [isPwFocused, setIsPwFocused] = useState(false);
@@ -495,7 +493,6 @@ function RegisterForm() {
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
 
-  // Strict Password Complexity Rules
   const criteria = [
     { id: "length", label: "At least 8 characters", met: password.length >= 8 },
     { id: "upper", label: "One uppercase letter", met: /[A-Z]/.test(password) },
@@ -775,7 +772,6 @@ export default function AuthPage() {
 
   return (
     <>
-      {/* FIX: dangerouslySetInnerHTML stops React from converting quotes into &quot; on the server */}
       <style dangerouslySetInnerHTML={{ __html: `
         html, body { height: 100vh; overflow: hidden; background: var(--void); }
 
@@ -792,33 +788,24 @@ export default function AuthPage() {
           to   { opacity: 1; transform: translateY(0); }
         }
 
-        body::after {
-          content: "";
-          position: fixed; top: 0; left: 0;
-          width: 100vw; height: 100vh;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-          opacity: 0.035; pointer-events: none; z-index: 9999;
-        }
-
         .auth-scroll::-webkit-scrollbar { width: 4px; }
         .auth-scroll::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
 
         @media (max-width: 768px) {
           .auth-hero { display: none !important; }
-          .auth-form-panel { width: 100% !important; }
+          .auth-scroll { min-width: 100% !important; flex: none !important; }
         }
       `}} />
 
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "1.3fr 1fr",
+        display: "flex",  // SWAPPED GRID FOR FLEXBOX FOR BULLETPROOF LAYOUT
         height: "100vh",
         background: "var(--void)",
         fontFamily: "'DM Sans', sans-serif",
         position: "relative"
       }}>
 
-        {/* Global Noise Layer (Moved off body tag to prevent DOM mismatch) */}
+        {/* Global Noise Layer */}
         <div style={{
           position: "absolute", inset: 0,
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
@@ -830,6 +817,7 @@ export default function AuthPage() {
           ref={heroRef}
           className="auth-hero"
           style={{
+            flex: 1.3,
             position: "relative",
             background: "transparent",
             display: "flex",
@@ -909,6 +897,7 @@ export default function AuthPage() {
         <div
           className="auth-scroll"
           style={{
+            flex: 1,
             background: "var(--surface)",
             display: "flex", 
             flexDirection: "column",
@@ -919,7 +908,6 @@ export default function AuthPage() {
             zIndex: 10
           }}
         >
-          {/* FIX: margin "auto" centers it perfectly, but allows normal scrolling when the form gets tall! */}
           <div style={{
             margin: "auto",
             width: "100%", maxWidth: 420,

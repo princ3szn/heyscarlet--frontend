@@ -7,8 +7,27 @@ import { authApi } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
 
-const appleEase: [number, number, number, number] = [0.16, 1, 0.3, 1];
+// ---------------------------------------------------------------
+// Typing dots
+// ---------------------------------------------------------------
+function TypingDots() {
+  return (
+    <div style={{ display: "flex", gap: 5, justifyContent: "center", marginBottom: 24 }}>
+      {[0, 1, 2].map((i) => (
+        <motion.div
+          key={i}
+          style={{ width: 5, height: 5, borderRadius: "50%", background: "var(--scarlet)" }}
+          animate={{ y: [0, -6, 0], opacity: [0.3, 1, 0.3] }}
+          transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
+        />
+      ))}
+    </div>
+  );
+}
 
+// ---------------------------------------------------------------
+// 3D mouse-reactive Lemniscate (centred, full screen)
+// ---------------------------------------------------------------
 function LemniscateHero() {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -54,21 +73,20 @@ function LemniscateHero() {
         <motion.div
           initial={{ opacity: 0, scale: 0.4 }}
           animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.4, ease: appleEase, delay: 0.1 }}
+          transition={{ duration: 1.4, ease: [0.2, 0.8, 0.2, 1], delay: 0.2 }}
         >
           <motion.div
             animate={{
               y: [0, -14, 0],
               filter: [
-                "drop-shadow(0 0 20px var(--scarlet-glow)) drop-shadow(0 0 60px rgba(139,26,26,0.15))",
-                "drop-shadow(0 0 44px rgba(248,212,160,0.4)) drop-shadow(0 0 100px var(--scarlet-glow))",
-                "drop-shadow(0 0 20px var(--scarlet-glow)) drop-shadow(0 0 60px rgba(139,26,26,0.15))",
+                "drop-shadow(0 0 20px rgba(192,57,43,0.3)) drop-shadow(0 0 60px rgba(139,26,26,0.15))",
+                "drop-shadow(0 0 44px rgba(248,212,160,0.4)) drop-shadow(0 0 100px rgba(192,57,43,0.22))",
+                "drop-shadow(0 0 20px rgba(192,57,43,0.3)) drop-shadow(0 0 60px rgba(139,26,26,0.15))",
               ],
             }}
             transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-            style={{ mixBlendMode: "var(--glow-blend)" as any }}
           >
-            <TheLemniscate width={260} height={160} style={{ color: "var(--scarlet)" }} />
+            <TheLemniscate width={260} height={160} />
           </motion.div>
         </motion.div>
       </motion.div>
@@ -76,6 +94,9 @@ function LemniscateHero() {
   );
 }
 
+// ---------------------------------------------------------------
+// Progress dots
+// ---------------------------------------------------------------
 function ProgressDots({ step }: { step: number }) {
   return (
     <div style={{ display: "flex", gap: 6, justifyContent: "center", marginBottom: 32 }}>
@@ -93,6 +114,9 @@ function ProgressDots({ step }: { step: number }) {
   );
 }
 
+// ---------------------------------------------------------------
+// Main page
+// ---------------------------------------------------------------
 export default function OnboardingCompletePage() {
   const router = useRouter();
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -102,15 +126,14 @@ export default function OnboardingCompletePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    // if (!accessToken) router.push("/auth");
+    if (!accessToken) router.push("/auth");
   }, [accessToken, router]);
 
-  // Smooth cinematic choreography without layout jumps
   useEffect(() => {
-    const t1 = setTimeout(() => setStep(1), 600);
-    const t2 = setTimeout(() => setStep(2), 1400);
-    const t3 = setTimeout(() => setStep(3), 2400);
-    const t4 = setTimeout(() => setStep(4), 3600);
+    const t1 = setTimeout(() => setStep(1), 500);
+    const t2 = setTimeout(() => setStep(2), 1900);
+    const t3 = setTimeout(() => setStep(3), 3400);
+    const t4 = setTimeout(() => setStep(4), 5200);
     return () => [t1, t2, t3, t4].forEach(clearTimeout);
   }, []);
 
@@ -127,8 +150,6 @@ export default function OnboardingCompletePage() {
     }
   }
 
-  const buttonSpring = { type: "spring", stiffness: 400, damping: 25 } as const;
-
   return (
     <>
       <style>{`
@@ -139,6 +160,9 @@ export default function OnboardingCompletePage() {
           100% { border-radius: 40% 60% 70% 30% / 40% 40% 60% 50%; transform: rotate(360deg) scale(1); }
         }
         @keyframes hs-spin-c { to { transform: rotate(360deg); } }
+        .oc-btn { transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s; }
+        .oc-btn:hover:not(:disabled) { opacity: 0.88; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(192,57,43,0.45); }
+        .oc-btn:active:not(:disabled) { transform: scale(0.98); }
       `}</style>
 
       <main style={{
@@ -148,8 +172,8 @@ export default function OnboardingCompletePage() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "var(--void)",
-        color: "var(--text-primary)",
+        background: "var(--void)", // FIXED FOR DARKMODE
+        color: "var(--text-primary)", // FIXED FOR DARKMODE
         transition: "background 0.35s ease, color 0.35s ease",
         overflow: "hidden",
         fontFamily: "'DM Sans', sans-serif",
@@ -157,6 +181,7 @@ export default function OnboardingCompletePage() {
         padding: "40px 24px",
       }}>
 
+        {/* Background aura */}
         <div style={{
           position: "absolute",
           width: 600, height: 600,
@@ -165,11 +190,12 @@ export default function OnboardingCompletePage() {
           background: "radial-gradient(ellipse at 40% 40%, rgba(139,26,26,0.2) 0%, rgba(192,57,43,0.05) 50%, transparent 70%)",
           animation: "hs-morph-c 22s linear infinite",
           filter: "blur(90px)",
-          mixBlendMode: "var(--glow-blend)" as any,
+          mixBlendMode: "screen",
           pointerEvents: "none",
           zIndex: 0,
         }} />
 
+        {/* Perspective grid floor */}
         <div style={{
           position: "absolute",
           bottom: 0, left: 0, right: 0, height: "40%",
@@ -186,16 +212,17 @@ export default function OnboardingCompletePage() {
           pointerEvents: "none",
         }} />
 
+        {/* Wordmark */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 1.4, ease: appleEase }}
+          transition={{ delay: 0.1, duration: 0.5 }}
           style={{
             position: "absolute", top: 32, left: 40,
             display: "flex", alignItems: "center", gap: 10, zIndex: 10,
           }}
         >
-          <TheLemniscate width={50} height={28} style={{ color: "var(--text-primary)" }} />
+          <TheLemniscate width={50} height={28} />
           <div style={{
             fontFamily: "'Cormorant Garamond', serif",
             fontSize: 18, fontWeight: 300, color: "var(--text-primary)", letterSpacing: "0.02em",
@@ -204,6 +231,7 @@ export default function OnboardingCompletePage() {
           </div>
         </motion.div>
 
+        {/* Content */}
         <div style={{ position: "relative", zIndex: 2, maxWidth: 520 }}>
 
           <LemniscateHero />
@@ -211,11 +239,19 @@ export default function OnboardingCompletePage() {
           <ProgressDots step={step >= 2 ? 2 : 1} />
 
           <AnimatePresence>
+            {step === 1 && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                <TypingDots />
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
             {step >= 2 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.4, ease: appleEase }}
+                transition={{ duration: 1.3, ease: [0.2, 0.8, 0.2, 1] }}
                 style={{
                   fontFamily: "'Cormorant Garamond', serif",
                   fontSize: 38, fontWeight: 300,
@@ -233,9 +269,9 @@ export default function OnboardingCompletePage() {
           <AnimatePresence>
             {step >= 3 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.4, ease: appleEase }}
+                transition={{ duration: 1.3, ease: [0.2, 0.8, 0.2, 1] }}
                 style={{
                   fontSize: 14,
                   color: "var(--text-dim)",
@@ -253,16 +289,14 @@ export default function OnboardingCompletePage() {
           <AnimatePresence>
             {step >= 4 && (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.4, ease: appleEase }}
+                transition={{ duration: 1, ease: [0.2, 0.8, 0.2, 1] }}
               >
-                <motion.button
+                <button
+                  className="oc-btn"
                   onClick={handleComplete}
                   disabled={loading}
-                  whileHover={!loading ? { scale: 1.03, y: -2 } : {}}
-                  whileTap={!loading ? { scale: 0.95 } : {}}
-                  transition={buttonSpring}
                   style={{
                     padding: "14px 52px",
                     background: "linear-gradient(135deg, var(--scarlet-deep), var(--scarlet))",
@@ -274,7 +308,7 @@ export default function OnboardingCompletePage() {
                     textTransform: "uppercase",
                     cursor: loading ? "not-allowed" : "pointer",
                     opacity: loading ? 0.5 : 1,
-                    boxShadow: "0 8px 32px var(--scarlet-glow)",
+                    boxShadow: "0 4px 24px rgba(192,57,43,0.32)",
                     display: "flex", alignItems: "center", gap: 10,
                     margin: "0 auto",
                   }}
@@ -289,10 +323,10 @@ export default function OnboardingCompletePage() {
                     }} />
                   )}
                   Enter the Room
-                </motion.button>
+                </button>
 
                 {error && (
-                  <div style={{ fontSize: 11, color: "var(--scarlet)", marginTop: 14 }}>
+                  <div style={{ fontSize: 11, color: "#e05a4e", marginTop: 14 }}>
                     {error}
                   </div>
                 )}

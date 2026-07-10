@@ -26,13 +26,11 @@ export function WelcomeState({ onPrompt, firstName }: WelcomeStateProps) {
   const [activePrompt, setActivePrompt] = useState("");
 
   useEffect(() => {
-    // Time-based greeting
     const hour = new Date().getHours();
     if (hour < 12) setGreeting("Good morning");
     else if (hour < 18) setGreeting("Good afternoon");
     else setGreeting("Good evening");
 
-    // Pick a random prompt on client mount to avoid hydration mismatch
     const randomIndex = Math.floor(Math.random() * SUGGESTED_PROMPTS.length);
     setActivePrompt(SUGGESTED_PROMPTS[randomIndex]);
   }, []);
@@ -46,8 +44,9 @@ export function WelcomeState({ onPrompt, firstName }: WelcomeStateProps) {
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      padding: "40px 24px",
+      padding: "20px 24px",
       textAlign: "center",
+      minHeight: "100%",
     }}>
 
       {/* Premium Lemniscate Reveal */}
@@ -55,7 +54,7 @@ export function WelcomeState({ onPrompt, firstName }: WelcomeStateProps) {
         initial={{ opacity: 0, scale: 0.85, filter: "blur(8px)" }}
         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
         transition={{ duration: 1.8, ease: [0.16, 1, 0.3, 1] }}
-        style={{ marginBottom: 48 }}
+        style={{ marginBottom: 32 }}
       >
         <motion.div
           animate={{
@@ -80,17 +79,17 @@ export function WelcomeState({ onPrompt, firstName }: WelcomeStateProps) {
       >
         <div style={{
           fontFamily: "'Cormorant Garamond', serif",
-          fontSize: 36, fontWeight: 300,
+          fontSize: 32, fontWeight: 300,
           color: "var(--text-primary)",
-          lineHeight: 1.2, marginBottom: 16,
+          lineHeight: 1.2, marginBottom: 12,
           letterSpacing: "-0.01em"
         }}>
           {headingText}
         </div>
         <div style={{
           fontSize: 14, color: "var(--text-dim)",
-          lineHeight: 1.7, maxWidth: 420,
-          margin: "0 auto 56px", fontWeight: 300,
+          lineHeight: 1.6, maxWidth: 420,
+          margin: "0 auto 24px", fontWeight: 300,
           fontFamily: "'DM Sans', sans-serif",
         }}>
           The room is quiet. What have you been deferring?
@@ -105,21 +104,29 @@ export function WelcomeState({ onPrompt, firstName }: WelcomeStateProps) {
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ delay: 0.7, duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
             onClick={() => onPrompt(activePrompt)}
-            whileHover={{ 
-              borderColor: "var(--scarlet)", 
-              backgroundColor: "var(--msg-user-bg)", 
-              color: "var(--text-primary)",
-              scale: 1.02
-            }}
+            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            // FIX: Using native events prevents Framer Motion from caching the hex color during theme toggles
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "var(--scarlet)";
+              e.currentTarget.style.backgroundColor = "var(--msg-user-bg)";
+              e.currentTarget.style.color = "var(--text-primary)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "var(--border-subtle)";
+              e.currentTarget.style.backgroundColor = "var(--surface-2)";
+              e.currentTarget.style.color = "var(--text-muted)";
+            }}
             style={{
-              background: "var(--surface-2)",
-              border: "1px solid var(--border-subtle)",
+              backgroundColor: "var(--surface-2)",
+              borderColor: "var(--border-subtle)",
+              borderWidth: "1px",
+              borderStyle: "solid",
               borderRadius: 16, padding: "24px 32px",
               cursor: "pointer", textAlign: "center",
               fontFamily: "'DM Sans', sans-serif",
               fontSize: 14, color: "var(--text-muted)",
-              lineHeight: 1.6, transition: "all 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              lineHeight: 1.6, transition: "background-color 0.3s, border-color 0.3s, color 0.3s",
               maxWidth: 480, width: "100%",
               boxShadow: "0 12px 32px rgba(0,0,0,0.12)"
             }}
