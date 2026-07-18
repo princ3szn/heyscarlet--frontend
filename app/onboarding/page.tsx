@@ -355,13 +355,20 @@ export default function OnboardingPage() {
         .ob-ta::placeholder { color: var(--text-faint); font-style: italic; }
         .ob-ta::-webkit-scrollbar { width: 2px; }
         .ob-ta::-webkit-scrollbar-thumb { background: #8B1A1A; border-radius: 2px; }
+        
+        /* ADDED MOBILE RESPONSIVENESS */
+        .ob-layout { display: grid; grid-template-columns: 1fr 1fr; }
+        @media (max-width: 768px) { 
+          .ob-layout { display: flex; flex-direction: column; justify-content: center; } 
+          .ob-stage { display: none !important; } 
+          .ob-divider { display: none !important; }
+        }
       `}</style>
 
-      <main style={{
+      {/* APPLIED RESPONSIVE CLASS HERE */}
+      <main className="ob-layout" style={{
         position: "relative",
         height: "100vh",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
         background: "var(--void)", // FIXED FOR DARKMODE
         color: "var(--text-primary)", // FIXED FOR DARKMODE
         transition: "background 0.35s ease, color 0.35s ease",
@@ -369,8 +376,8 @@ export default function OnboardingPage() {
         fontFamily: "'DM Sans', sans-serif",
       }}>
 
-        {/* LEFT — 3D Lemniscate stage */}
-        <div style={{ position: "relative", borderRight: "1px solid rgba(192,57,43,0.1)" }}>
+        {/* LEFT — 3D Lemniscate stage | APPLIED RESPONSIVE CLASS HERE */}
+        <div className="ob-stage" style={{ position: "relative", borderRight: "1px solid rgba(192,57,43,0.1)" }}>
           <LemniscateStage />
         </div>
 
@@ -577,8 +584,8 @@ export default function OnboardingPage() {
           </div>
         </div>
 
-        {/* Vertical divider */}
-        <div style={{
+        {/* Vertical divider | APPLIED RESPONSIVE CLASS HERE */}
+        <div className="ob-divider" style={{
           position: "absolute",
           left: "50%", top: "8%", bottom: "8%",
           width: 1,

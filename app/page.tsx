@@ -77,19 +77,6 @@ export default function LandingPage() {
         {/* Left Column: Typography */}
         <div style={{ flex: "1 1 500px", paddingTop: 40 }}>
           
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{
-            display: "inline-flex", alignItems: "center", gap: 10, padding: "8px 16px",
-            background: "var(--surface)", border: "1px solid var(--border)", borderRadius: 20,
-            fontSize: 13, color: "var(--text-primary)", marginBottom: 32, fontWeight: 500
-          }}>
-            <motion.span 
-              animate={{ opacity: [1, 0.4, 1] }} 
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--scarlet)", display: "inline-block", boxShadow: "0 0 10px var(--scarlet)" }} 
-            />
-            Introducing the 6 Persona Framework
-          </motion.div>
-
           <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.1 }} style={{
             fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(3rem, 6vw, 4.5rem)", fontWeight: 300, lineHeight: 1.1, marginBottom: 24
           }}>

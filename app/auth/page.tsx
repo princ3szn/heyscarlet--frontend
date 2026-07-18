@@ -579,7 +579,7 @@ function RegisterForm() {
         </motion.div>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+      <div className="name-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <Field
           label="First Name" id="r-fname" placeholder="John"
           value={firstName} onChange={setFirstName}
@@ -766,6 +766,16 @@ export default function AuthPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      if (window.location.pathname !== "/auth") {
+        window.location.reload(); 
+      }
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
   function switchTab(next: "login" | "register") {
     setTab(next);
   }
@@ -773,8 +783,6 @@ export default function AuthPage() {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: `
-        html, body { height: 100vh; overflow: hidden; background: var(--void); }
-
         @keyframes breatheSignal {
           0%   { transform: translate(-50%, -50%) scale(0.9) rotate(-5deg); opacity: 0.2; }
           100% { transform: translate(-50%, -50%) scale(1.05) rotate(5deg); opacity: 0.4; }
@@ -792,25 +800,29 @@ export default function AuthPage() {
         .auth-scroll::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 4px; }
 
         @media (max-width: 768px) {
+          .auth-layout { flex-direction: column !important; }
           .auth-hero { display: none !important; }
-          .auth-scroll { min-width: 100% !important; flex: none !important; }
+          .auth-scroll { min-width: 100% !important; flex: none !important; padding: 24px !important; }
+          .name-grid { display: flex !important; flex-direction: column !important; gap: 16px !important; }
         }
       `}} />
 
+      {/* Global Noise Layer explicitly scoped here instead of the body */}
       <div style={{
-        display: "flex",  // SWAPPED GRID FOR FLEXBOX FOR BULLETPROOF LAYOUT
+        position: "fixed", inset: 0,
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+        opacity: 0.035, pointerEvents: "none", zIndex: 9999
+      }} />
+
+      <div className="auth-layout" style={{
+        display: "flex", 
         height: "100vh",
+        width: "100vw",
+        overflow: "hidden", // Scoped lock so it doesn't break the landing page
         background: "var(--void)",
         fontFamily: "'DM Sans', sans-serif",
         position: "relative"
       }}>
-
-        {/* Global Noise Layer */}
-        <div style={{
-          position: "absolute", inset: 0,
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
-          opacity: 0.035, pointerEvents: "none", zIndex: 9999
-        }} />
 
         {/* LEFT — Hero panel */}
         <div
