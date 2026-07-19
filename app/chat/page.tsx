@@ -26,7 +26,7 @@ export default function ChatPage() {
     }
   }, [accessToken, router]);
 
-  useEffect(() => {
+ useEffect(() => {
     const handleTitleUpdate = (e: Event) => {
       setActiveTitle((e as CustomEvent<string>).detail);
     };
@@ -38,11 +38,11 @@ export default function ChatPage() {
       }
     };
 
-    window.addEventListener("chat-active-title" as any, handleTitleUpdate);
-    window.addEventListener("chat-renamed" as any, handleRenamed);
+    window.addEventListener("chat-active-title", handleTitleUpdate);
+    window.addEventListener("chat-renamed", handleRenamed);
     return () => {
-      window.removeEventListener("chat-active-title" as any, handleTitleUpdate);
-      window.removeEventListener("chat-renamed" as any, handleRenamed);
+      window.removeEventListener("chat-active-title", handleTitleUpdate);
+      window.removeEventListener("chat-renamed", handleRenamed);
     };
   }, [activeConversationId]);
 
