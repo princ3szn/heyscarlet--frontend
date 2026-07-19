@@ -21,7 +21,7 @@ function EyeIcon({ open }: { open: boolean }) {
 // Cinematic Particle Background (Hydration Safe)
 function Particles() {
   const [mounted, setMounted] = useState(false);
-  const [particles, setParticles] = useState<any[]>([]);
+  const [particles, setParticles] = useState<{id: number, x: number, delay: number, duration: number, left: string, size: number}[]>([]);
 
   useEffect(() => {
     const generated = [...Array(15)].map((_, i) => ({
@@ -252,7 +252,7 @@ export default function ResetPasswordPage() {
         width: 600, height: 600,
         background: "radial-gradient(circle, rgba(192,57,43,0.15) 0%, transparent 60%)",
         filter: "blur(60px)",
-        mixBlendMode: "var(--glow-blend)" as any,
+        mixBlendMode: "var(--glow-blend)" as "normal",
         pointerEvents: "none",
         zIndex: 0
       }} />

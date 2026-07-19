@@ -5,8 +5,13 @@ import { Sidebar } from "@/components/chat/Sidebar";
 import { ChatArea } from "@/components/chat/ChatArea";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
 import type { PersonaId, Persona } from "@/components/chat/PersonaSwitcher";
+import { useAuthStore } from "@/store/authStore";
+import { useRouter } from "next/navigation";
 
 export default function ChatPage() {
+  const router = useRouter();
+  const accessToken = useAuthStore((s) => s.accessToken);
+
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -14,18 +19,13 @@ export default function ChatPage() {
 
   const [resetKey, setResetKey] = useState(0);
   const [activeTitle, setActiveTitle] = useState("New Session");
-  const [isRestoring, setIsRestoring] = useState(true);
 
-  // FIX: Restore active chat session from localStorage on refresh
   useEffect(() => {
-    const savedChatId = localStorage.getItem("hs_active_chat");
-    if (savedChatId) {
-      setActiveConversationId(savedChatId);
+    if (!accessToken) {
+      router.push("/auth");
     }
-    setIsRestoring(false);
-  }, []);
+  }, [accessToken, router]);
 
-  // Update title based on events
   useEffect(() => {
     const handleTitleUpdate = (e: Event) => {
       setActiveTitle((e as CustomEvent<string>).detail);
@@ -38,31 +38,20 @@ export default function ChatPage() {
       }
     };
 
-    window.addEventListener("chat-active-title", handleTitleUpdate);
-    window.addEventListener("chat-renamed", handleRenamed);
+    window.addEventListener("chat-active-title" as any, handleTitleUpdate);
+    window.addEventListener("chat-renamed" as any, handleRenamed);
     return () => {
-      window.removeEventListener("chat-active-title", handleTitleUpdate);
-      window.removeEventListener("chat-renamed", handleRenamed);
+      window.removeEventListener("chat-active-title" as any, handleTitleUpdate);
+      window.removeEventListener("chat-renamed" as any, handleRenamed);
     };
   }, [activeConversationId]);
 
-  // FIX: Centralized handler to save to state and localStorage simultaneously
-  const handleChatSelect = (id: string) => {
-    setActiveConversationId(id);
-    localStorage.setItem("hs_active_chat", id);
-  };
-
   const handleNewChat = () => {
     setActiveConversationId(null);
-    localStorage.removeItem("hs_active_chat");
     setActiveTitle("New Session");
     document.title = "HeyScarlet";
     setResetKey(prev => prev + 1);
   };
-
-  if (isRestoring) {
-    return <div style={{ height: "100vh", background: "var(--void)" }} />; // Prevents flashing Welcome Screen
-  }
 
   return (
     <>
@@ -95,14 +84,14 @@ export default function ChatPage() {
           background: "var(--scarlet-glow)",
           animation: "hs-chat-morph 25s linear infinite",
           filter: "blur(80px)", pointerEvents: "none", zIndex: 0,
-          mixBlendMode: "var(--glow-blend)" as any,
+          mixBlendMode: "var(--glow-blend)" as "normal",
           transition: "background 0.35s",
         }} />
 
         <div style={{ position: "relative", zIndex: 50, display: "flex" }}>
           <Sidebar
             activeId={activeConversationId}
-            onSelect={handleChatSelect}
+            onSelect={setActiveConversationId}
             onNewChat={handleNewChat}
             mobileOpen={mobileMenuOpen}
             onMobileClose={() => setMobileMenuOpen(false)}
@@ -166,10 +155,11 @@ export default function ChatPage() {
             <div />
           </div>
 
+          {/* CRITICAL FIX: Removed activeConversationId from the key so it doesn't unmount mid-stream */}
           <ChatArea
             key={`chat-area-${resetKey}`}
             conversationId={activeConversationId}
-            onConversationCreated={handleChatSelect}
+            onConversationCreated={(id) => setActiveConversationId(id)}
             personaId={personaId}
             onPersonaSwitch={(p: Persona) => setPersonaId(p.id)}
           />

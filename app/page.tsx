@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
@@ -41,7 +41,7 @@ export default function LandingPage() {
       <div style={{
         position: "absolute", top: "-20%", right: "-10%", width: 800, height: 800,
         background: "radial-gradient(circle at center, var(--scarlet-glow) 0%, transparent 60%)",
-        filter: "blur(60px)", mixBlendMode: "var(--glow-blend)" as any, zIndex: 0, pointerEvents: "none"
+        filter: "blur(60px)", mixBlendMode: "var(--glow-blend)" as "normal", zIndex: 0, pointerEvents: "none"
       }} />
 
       {/* Navbar */}

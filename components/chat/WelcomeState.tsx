@@ -138,7 +138,7 @@ export function WelcomeState({ onPrompt, firstName }: WelcomeStateProps) {
             }}>
               Observation
             </span>
-            <span style={{ fontStyle: "italic" }}>"{activePrompt}"</span>
+            <span style={{ fontStyle: "italic" }}>&quot;{activePrompt}&quot;</span>
           </motion.button>
         )}
       </AnimatePresence>

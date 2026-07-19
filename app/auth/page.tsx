@@ -309,7 +309,7 @@ function LockoutBanner() {
 // ---------------------------------------------------------------
 function LoginForm() {
   const router = useRouter();
-  const setAccessToken = useAuthStore((s: any) => s.setAccessToken);
+  const setAccessToken = useAuthStore((s: { setAccessToken: (token: string) => void }) => s.setAccessToken);
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -476,7 +476,7 @@ function LoginForm() {
 // ---------------------------------------------------------------
 function RegisterForm() {
   const router = useRouter();
-  const setAccessToken = useAuthStore((s: any) => s.setAccessToken);
+  const setAccessToken = useAuthStore((s: { setAccessToken: (token: string) => void }) => s.setAccessToken);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
