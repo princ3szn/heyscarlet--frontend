@@ -26,25 +26,26 @@ export default function ChatPage() {
     }
   }, [accessToken, router]);
 
- useEffect(() => {
-  const handleTitleUpdate = (e: Event) => {
-    setActiveTitle((e as CustomEvent<string>).detail);
-  };
-  const handleRenamed = (e: Event) => {
-    const detail = (e as CustomEvent<{ id: string, title: string }>).detail;
-    if (detail.id === activeConversationId) {
-      setActiveTitle(detail.title);
-      document.title = `${detail.title} | HeyScarlet`;
-    }
-  };
+  useEffect(() => {
+    const handleTitleUpdate = (e: Event) => {
+      setActiveTitle((e as CustomEvent<string>).detail);
+    };
+    const handleRenamed = (e: Event) => {
+      const detail = (e as CustomEvent<{id: string, title: string}>).detail;
+      if (detail.id === activeConversationId) {
+        setActiveTitle(detail.title);
+        document.title = `${detail.title} | HeyScarlet`;
+      }
+    };
 
-  window.addEventListener("chat-active-title", handleTitleUpdate);
-  window.addEventListener("chat-renamed", handleRenamed);
-  return () => {
-    window.removeEventListener("chat-active-title", handleTitleUpdate);
-    window.removeEventListener("chat-renamed", handleRenamed);
-  };
-}, [activeConversationId]);
+    window.addEventListener("chat-active-title" as any, handleTitleUpdate);
+    window.addEventListener("chat-renamed" as any, handleRenamed);
+    return () => {
+      window.removeEventListener("chat-active-title" as any, handleTitleUpdate);
+      window.removeEventListener("chat-renamed" as any, handleRenamed);
+    };
+  }, [activeConversationId]);
+
   const handleNewChat = () => {
     setActiveConversationId(null);
     setActiveTitle("New Session");
@@ -68,17 +69,19 @@ export default function ChatPage() {
         }
       `}</style>
 
+      {/* FIX: position: fixed and 100dvh lock the app to the visible screen, preventing layout cutoff */}
       <div style={{
-        display: "flex", height: "100vh",
+        position: "fixed", inset: 0,
+        display: "flex", height: "100dvh", width: "100vw",
         background: "var(--void)",
         color: "var(--text-primary)",
         fontFamily: "'DM Sans', sans-serif",
-        overflow: "hidden", position: "relative",
+        overflow: "hidden",
         transition: "background 0.35s, color 0.35s",
       }}>
 
         <div style={{
-          position: "fixed", top: "-10%", left: "30%",
+          position: "absolute", top: "-10%", left: "30%",
           width: 500, height: 500,
           background: "var(--scarlet-glow)",
           animation: "hs-chat-morph 25s linear infinite",
@@ -154,7 +157,6 @@ export default function ChatPage() {
             <div />
           </div>
 
-          {/* CRITICAL FIX: Removed activeConversationId from the key so it doesn't unmount mid-stream */}
           <ChatArea
             key={`chat-area-${resetKey}`}
             conversationId={activeConversationId}

@@ -19,13 +19,9 @@ interface SidebarProps {
   onToggleCollapse: () => void;
 }
 
-// Highly responsive, snappy spring physics for UI interactions
 const snappySpring = { type: "spring", stiffness: 450, damping: 35 } as const;
 const menuSpring = { type: "spring", stiffness: 400, damping: 30 } as const;
 
-// ------------------------------------------------------------------
-// User Profile Menu
-// ------------------------------------------------------------------
 function UserMenu({ user, collapsed, onSignOut, onOpenSettings }: { user: UserResponse | null; collapsed: boolean; onSignOut: () => void; onOpenSettings: () => void }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -158,9 +154,6 @@ function UserMenu({ user, collapsed, onSignOut, onOpenSettings }: { user: UserRe
   );
 }
 
-// ------------------------------------------------------------------
-// Main Sidebar
-// ------------------------------------------------------------------
 export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClose, collapsed, onToggleCollapse }: SidebarProps) {
   const router = useRouter();
   const { logout } = useAuth();
@@ -170,16 +163,13 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
   const [showSignOutModal, setShowSignOutModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
-  // Header interaction states
   const [isHeaderHovered, setIsHeaderHovered] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const tooltipTimeout = useRef<NodeJS.Timeout | null>(null);
   
-  // Renaming State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
-  // CRITICAL FIX: If the mobile menu is open, force the sidebar to behave as if it is expanded
   const isCollapsed = collapsed && !mobileOpen;
 
   useEffect(() => {
@@ -190,27 +180,6 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
       })
       .catch((err) => {
         console.error("Sidebar load error:", err);
-        const isAuthError = 
-          err?.status === 401 || 
-          err?.status === 403 || 
-          String(err?.message || "").toLowerCase().includes('unauthorized') ||
-          String(err?.message || "").toLowerCase().includes('forbidden');
-
-        if (isAuthError) {
-          console.warn("Security constraint: Invalid session. Force logging out.");
-          logout();
-          router.push("/auth");
-        } else {
-          console.warn("Backend unreachable. Gracefully degrading to offline/local mode.");
-          setUser({ 
-            id: "local", 
-            email: "waiting_for_backend@heyscarlet.com", 
-            first_name: "Local", 
-            last_name: "Mode",
-            username: "local_dev",
-            onboarding_complete: true
-          });
-        }
       })
       .finally(() => setLoading(false));
   }, [activeId, logout, router]);
@@ -286,7 +255,8 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
       animate={{ width: isCollapsed ? 68 : 260 }}
       transition={snappySpring}
       style={{
-        height: "100vh", background: "var(--sidebar-bg)", borderRight: "1px solid var(--border-subtle)",
+        height: "100%", // FIX: Height 100% instead of 100vh stops it from pushing past the screen
+        background: "var(--sidebar-bg)", borderRight: "1px solid var(--border-subtle)",
         display: "flex", flexDirection: "column", overflow: "visible", flexShrink: 0,
       }}
     >
@@ -502,7 +472,13 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
         )}
       </div>
 
-      <div style={{ borderTop: "1px solid var(--border-subtle)", padding: isCollapsed ? "12px 10px" : "12px 16px", flexShrink: 0 }}>
+      {/* FIX: Add safe-area-inset-bottom so the profile and logout button aren't covered by the iPhone home bar */}
+      <div style={{ 
+        borderTop: "1px solid var(--border-subtle)", 
+        padding: isCollapsed ? "12px 10px" : "12px 16px", 
+        paddingBottom: `calc(${isCollapsed ? 12 : 16}px + env(safe-area-inset-bottom))`,
+        flexShrink: 0 
+      }}>
         {loading ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--hover-bg)", flexShrink: 0, animation: "sb-shimmer 1.5s infinite" }} />
@@ -522,7 +498,7 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
 
   return (
     <>
-      <div className="sb-desktop" style={{ position: "relative", zIndex: 40, height: "100vh" }}>
+      <div className="sb-desktop" style={{ position: "relative", zIndex: 40, height: "100dvh" }}>
         {sidebarContent}
       </div>
 
@@ -530,7 +506,8 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
         {mobileOpen && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onMobileClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", zIndex: 40 }} />
-            <motion.div initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ type: "spring", stiffness: 450, damping: 35 }} style={{ position: "fixed", left: 0, top: 0, bottom: 0, zIndex: 50 }}>
+            {/* FIX: Set height to 100dvh to prevent it bleeding off the bottom of the screen */}
+            <motion.div initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ type: "spring", stiffness: 450, damping: 35 }} style={{ position: "fixed", left: 0, top: 0, bottom: 0, height: "100dvh", zIndex: 50 }}>
               {sidebarContent}
             </motion.div>
           </>
