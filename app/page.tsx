@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
