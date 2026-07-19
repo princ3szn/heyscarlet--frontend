@@ -26,26 +26,25 @@ export default function ChatPage() {
     }
   }, [accessToken, router]);
 
-  useEffect(() => {
-    const handleTitleUpdate = (e: Event) => {
-      setActiveTitle((e as CustomEvent<string>).detail);
-    };
-    const handleRenamed = (e: Event) => {
-      const detail = (e as CustomEvent<{id: string, title: string}>).detail;
-      if (detail.id === activeConversationId) {
-        setActiveTitle(detail.title);
-        document.title = `${detail.title} | HeyScarlet`;
-      }
-    };
+ useEffect(() => {
+  const handleTitleUpdate = (e: Event) => {
+    setActiveTitle((e as CustomEvent<string>).detail);
+  };
+  const handleRenamed = (e: Event) => {
+    const detail = (e as CustomEvent<{ id: string, title: string }>).detail;
+    if (detail.id === activeConversationId) {
+      setActiveTitle(detail.title);
+      document.title = `${detail.title} | HeyScarlet`;
+    }
+  };
 
-    window.addEventListener("chat-active-title" as any, handleTitleUpdate);
-    window.addEventListener("chat-renamed" as any, handleRenamed);
-    return () => {
-      window.removeEventListener("chat-active-title" as any, handleTitleUpdate);
-      window.removeEventListener("chat-renamed" as any, handleRenamed);
-    };
-  }, [activeConversationId]);
-
+  window.addEventListener("chat-active-title", handleTitleUpdate);
+  window.addEventListener("chat-renamed", handleRenamed);
+  return () => {
+    window.removeEventListener("chat-active-title", handleTitleUpdate);
+    window.removeEventListener("chat-renamed", handleRenamed);
+  };
+}, [activeConversationId]);
   const handleNewChat = () => {
     setActiveConversationId(null);
     setActiveTitle("New Session");
