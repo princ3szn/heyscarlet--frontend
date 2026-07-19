@@ -802,7 +802,7 @@ export default function AuthPage() {
         @media (max-width: 768px) {
           .auth-layout { flex-direction: column !important; }
           .auth-hero { display: none !important; }
-          .auth-scroll { min-width: 100% !important; flex: none !important; padding: 24px !important; }
+          .auth-scroll { min-width: 100% !important; padding: 24px !important; padding-bottom: calc(40px + env(safe-area-inset-bottom)) !important; }
           .name-grid { display: flex !important; flex-direction: column !important; gap: 16px !important; }
         }
       `}} />
@@ -816,7 +816,7 @@ export default function AuthPage() {
 
       <div className="auth-layout" style={{
         display: "flex", 
-        height: "100vh",
+        height: "100dvh",
         width: "100vw",
         overflow: "hidden", // Scoped lock so it doesn't break the landing page
         background: "var(--void)",

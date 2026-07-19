@@ -6,7 +6,7 @@ import { authApi } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
 
 interface AuthContextValue {
-  ready: boolean; // true once boot refresh has resolved
+  ready: boolean;
   isAuthenticated: boolean;
   logout: () => Promise<void>;
 }
@@ -22,16 +22,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // from memory. Try a silent refresh using the httpOnly cookie so the
   // user does not have to log in again.
   useEffect(() => {
-  authApi
-    .refresh()
-    .then((token) => {
-      if (token) setAccessToken(token);
-    })
-    .catch(() => {
-      // No valid cookie, leave accessToken null
-    })
-    .finally(() => setReady(true));
-}, [setAccessToken]);
+    authApi
+      .refresh()
+      .then((token) => {
+        if (token) setAccessToken(token);
+      })
+      .catch(() => {
+        // No valid cookie, leave accessToken null
+      })
+      .finally(() => setReady(true));
+  }, [setAccessToken]);
 
   async function logout() {
     try {
@@ -42,6 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearAccessToken();
       router.replace("/auth");
     }
+  }
+
+  // THE FIX: We stop the app from rendering ANY pages until the silent refresh finishes.
+  // This prevents the Chat page from prematurely kicking the user out.
+  if (!ready) {
+    return <div style={{ height: "100vh", background: "var(--void)" }} />;
   }
 
   return (

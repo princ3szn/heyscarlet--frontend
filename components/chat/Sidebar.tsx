@@ -179,6 +179,9 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
 
+  // CRITICAL FIX: If the mobile menu is open, force the sidebar to behave as if it is expanded
+  const isCollapsed = collapsed && !mobileOpen;
+
   useEffect(() => {
     Promise.all([chatApi.listConversations(), authApi.me()])
       .then(([convs, u]) => {
@@ -212,16 +215,12 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
       .finally(() => setLoading(false));
   }, [activeId, logout, router]);
 
-  // NEW FIX: Sync document title & dispatch event for top bar
   useEffect(() => {
     const activeConv = conversations.find(c => c.id === activeId);
     const currentTitle = activeConv?.title || "New Session";
     
-    // Update the browser tab
     if (typeof window !== "undefined") {
       document.title = activeId ? `${currentTitle} | HeyScarlet` : "HeyScarlet";
-      
-      // Dispatch event to update the top bar in the ChatPage
       window.dispatchEvent(new CustomEvent("chat-active-title", { detail: currentTitle }));
     }
   }, [activeId, conversations]);
@@ -268,11 +267,10 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
     }
   }
 
-  // Handle tooltip delays
   const handleMouseEnterHeader = () => {
     setIsHeaderHovered(true);
-    if (collapsed) {
-      tooltipTimeout.current = setTimeout(() => setShowTooltip(true), 600); // Wait 600ms before showing text
+    if (isCollapsed) {
+      tooltipTimeout.current = setTimeout(() => setShowTooltip(true), 600);
     }
   };
 
@@ -285,29 +283,27 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
   const sidebarContent = (
     <motion.div
       initial={false}
-      animate={{ width: collapsed ? 68 : 260 }}
+      animate={{ width: isCollapsed ? 68 : 260 }}
       transition={snappySpring}
       style={{
         height: "100vh", background: "var(--sidebar-bg)", borderRight: "1px solid var(--border-subtle)",
         display: "flex", flexDirection: "column", overflow: "visible", flexShrink: 0,
       }}
     >
-      {/* Header Area - ALIGNMENT FIX */}
       <div 
         onMouseEnter={handleMouseEnterHeader}
         onMouseLeave={handleMouseLeaveHeader}
         style={{
           position: "relative",
-          height: 54, // Matched exactly to topbar height
+          height: 54,
           padding: "0 16px", 
           borderBottom: "1px solid var(--border-subtle)",
-          display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "space-between", 
+          display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "space-between", 
           flexShrink: 0, overflow: "visible" 
         }}
       >
-        {/* Expanded State: Logo on left, button on right */}
         <AnimatePresence mode="popLayout">
-          {!collapsed && (
+          {!isCollapsed && (
             <>
               <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={snappySpring} style={{ display: "flex", alignItems: "center", gap: 8, whiteSpace: "nowrap" }}>
                 <TheLemniscate width={32} height={18} style={{ color: "var(--text-primary)" }} />
@@ -315,33 +311,33 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
                   Hey<span style={{ color: "var(--scarlet)" }}>Scarlet</span>
                 </span>
               </motion.div>
-              <motion.button 
-                aria-label="Collapse sidebar"
-                whileTap={{ scale: 0.9 }} 
-                onClick={onToggleCollapse} 
-                style={{ 
-                  background: "none", border: "none", cursor: "pointer", color: "var(--text-dim)", 
-                  padding: 4, display: "flex", alignItems: "center", borderRadius: 6, 
-                  backgroundColor: "transparent"
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--hover-bg)"}
-                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <rect x="3" y="3" width="18" height="18" rx="2" />
-                  <line x1="9" y1="3" x2="9" y2="21" />
-                  <polyline points="15 9 11 12 15 15" />
-                </svg>
-              </motion.button>
+              {!mobileOpen && (
+                <motion.button 
+                  aria-label="Collapse sidebar"
+                  whileTap={{ scale: 0.9 }} 
+                  onClick={onToggleCollapse} 
+                  style={{ 
+                    background: "none", border: "none", cursor: "pointer", color: "var(--text-dim)", 
+                    padding: 4, display: "flex", alignItems: "center", borderRadius: 6, 
+                    backgroundColor: "transparent"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--hover-bg)"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "transparent"}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="9" y1="3" x2="9" y2="21" />
+                    <polyline points="15 9 11 12 15 15" />
+                  </svg>
+                </motion.button>
+              )}
             </>
           )}
         </AnimatePresence>
 
-        {/* Collapsed State: Logo OR Button occupying the exact same center space */}
-        {collapsed && (
+        {isCollapsed && (
           <div style={{ position: "relative", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center" }}>
             
-            {/* The Logo (Fades out on hover) */}
             <motion.div 
               initial={false}
               animate={{ opacity: isHeaderHovered ? 0 : 1, scale: isHeaderHovered ? 0.9 : 1 }} 
@@ -351,7 +347,6 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
               <TheLemniscate width={24} height={14} style={{ color: "var(--text-primary)" }} />
             </motion.div>
 
-            {/* The Button (Fades in on hover) */}
             <motion.button 
               aria-label="Expand sidebar"
               whileTap={{ scale: 0.9 }} 
@@ -389,7 +384,6 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
                   }}
                 >
                   Expand sidebar
-                  {/* Little triangle pointer */}
                   <div style={{
                     position: "absolute", top: "50%", left: -4, transform: "translateY(-50%)",
                     borderTop: "4px solid transparent", borderBottom: "4px solid transparent",
@@ -403,8 +397,7 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
         )}
       </div>
 
-      {/* New chat */}
-      <div style={{ padding: collapsed ? "16px 12px" : "16px 20px", flexShrink: 0 }}>
+      <div style={{ padding: isCollapsed ? "16px 12px" : "16px 20px", flexShrink: 0 }}>
         <motion.button 
           aria-label="Start new session"
           onClick={() => { onNewChat(); onMobileClose(); }} 
@@ -412,15 +405,15 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
           whileTap={{ scale: 0.96 }} 
           transition={snappySpring} 
           style={{
-            width: "100%", padding: collapsed ? "12px" : "10px 14px", background: "var(--surface)", border: "1px solid var(--border)",
-            borderRadius: 10, display: "flex", alignItems: "center", justifyContent: collapsed ? "center" : "flex-start", gap: 10,
+            width: "100%", padding: isCollapsed ? "12px" : "10px 14px", background: "var(--surface)", border: "1px solid var(--border)",
+            borderRadius: 10, display: "flex", alignItems: "center", justifyContent: isCollapsed ? "center" : "flex-start", gap: 10,
             cursor: "pointer", fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: "var(--text-primary)", fontWeight: 500,
             boxShadow: "0 2px 8px rgba(0,0,0,0.05)", transition: "border-color 0.2s"
           }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
           <AnimatePresence mode="popLayout">
-            {!collapsed && (
+            {!isCollapsed && (
               <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} style={{ whiteSpace: "nowrap" }}>
                 New Session
               </motion.span>
@@ -429,9 +422,8 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
         </motion.button>
       </div>
 
-      {/* Conversation list */}
-      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: collapsed ? "0 8px" : "0 12px" }} className="sb-scroll">
-        {!collapsed && (
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden", padding: isCollapsed ? "0 8px" : "0 12px" }} className="sb-scroll">
+        {!isCollapsed && (
           loading ? (
             <div style={{ padding: "16px 8px" }}>
               {[1, 2, 3].map((i) => <div key={i} style={{ height: 36, background: "var(--hover-bg)", borderRadius: 8, marginBottom: 8, animation: "sb-shimmer 1.4s ease-in-out infinite" }} />)}
@@ -510,14 +502,13 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
         )}
       </div>
 
-      {/* User profile */}
-      <div style={{ borderTop: "1px solid var(--border-subtle)", padding: collapsed ? "12px 10px" : "12px 16px", flexShrink: 0 }}>
+      <div style={{ borderTop: "1px solid var(--border-subtle)", padding: isCollapsed ? "12px 10px" : "12px 16px", flexShrink: 0 }}>
         {loading ? (
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--hover-bg)", flexShrink: 0, animation: "sb-shimmer 1.5s infinite" }} />
           </div>
         ) : (
-          <UserMenu user={user} collapsed={collapsed} onSignOut={() => setShowSignOutModal(true)} onOpenSettings={() => setShowSettingsModal(true)} />
+          <UserMenu user={user} collapsed={isCollapsed} onSignOut={() => setShowSignOutModal(true)} onOpenSettings={() => setShowSettingsModal(true)} />
         )}
       </div>
 
@@ -535,7 +526,6 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
         {sidebarContent}
       </div>
 
-      {/* Mobile Overlays with Springs */}
       <AnimatePresence>
         {mobileOpen && (
           <>

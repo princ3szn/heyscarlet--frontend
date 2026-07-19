@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
 
 const textContainer: Variants = {
   hidden: { opacity: 0 },
@@ -26,6 +29,15 @@ const LANDING_PERSONAS = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
+  const accessToken = useAuthStore((s) => s.accessToken);
+
+  // Auto-redirect to the app if they are already logged in
+  useEffect(() => {
+    if (accessToken) {
+      router.push("/chat");
+    }
+  }, [accessToken, router]);
   return (
     <div style={{ background: "var(--void)", color: "var(--text-primary)", minHeight: "100vh", fontFamily: "'DM Sans', sans-serif", transition: "background 0.35s", overflowX: "hidden", position: "relative" }}>
       
