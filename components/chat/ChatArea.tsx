@@ -227,7 +227,6 @@ export function ChatArea({
                 token = parsed.content;
               }
 
-              // Always append exactly what the token is, even if it's just " " or "\n"
               chunkAppended += token;
 
             } catch {
@@ -276,7 +275,7 @@ export function ChatArea({
                     role={m.role} 
                     content={m.content} 
                     isStreaming={m.isStreaming} 
-                    onEdit={(newContent) => handleEditMessage(m.id, newContent)}
+                    onEdit={(newContent: string) => handleEditMessage(m.id, newContent)}
                     onReload={() => handleReloadMessage(m.id)}
                   />
                 ))}
@@ -305,7 +304,8 @@ export function ChatArea({
         )}
       </AnimatePresence>
 
-      <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: "0 32px 32px", position: "relative", zIndex: 20 }}>
+      {/* FIX: Ensure the input bar respects the iPhone swipe line at the bottom */}
+      <div style={{ maxWidth: 800, width: "100%", margin: "0 auto", padding: "0 16px calc(16px + env(safe-area-inset-bottom))", position: "relative", zIndex: 20 }}>
         <InputBar 
           key={conversationId || "new-session"} 
           onSend={handleSend} 

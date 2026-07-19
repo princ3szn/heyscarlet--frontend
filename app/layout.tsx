@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { AuthProvider } from "@/lib/AuthProvider";
 import { ThemeProvider } from "@/lib/ThemeContext";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -8,6 +8,15 @@ import "@/app/globals.css";
 export const metadata: Metadata = {
   title: "HeyScarlet",
   description: "Your AI Companion",
+};
+
+// FIX: This strictly prevents iOS Safari from zooming in on input taps
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

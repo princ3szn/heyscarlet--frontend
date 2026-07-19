@@ -26,7 +26,7 @@ export default function ChatPage() {
     }
   }, [accessToken, router]);
 
- useEffect(() => {
+  useEffect(() => {
     const handleTitleUpdate = (e: Event) => {
       setActiveTitle((e as CustomEvent<string>).detail);
     };
@@ -69,7 +69,7 @@ export default function ChatPage() {
         }
       `}</style>
 
-      {/* FIX: position: fixed and 100dvh lock the app to the visible screen, preventing layout cutoff */}
+      {/* FIX: position: fixed and 100dvh lock the app perfectly to the visible screen */}
       <div style={{
         position: "fixed", inset: 0,
         display: "flex", height: "100dvh", width: "100vw",

@@ -6,7 +6,7 @@ interface AuthState {
   clearAccessToken: () => void;
 }
 
-// Safely initialize from localStorage
+// Safely initialize from localStorage so sessions survive refreshes
 const getInitialToken = () => {
   if (typeof window !== "undefined") {
     return localStorage.getItem("hs_token");
