@@ -6,28 +6,16 @@ interface AuthState {
   clearAccessToken: () => void;
 }
 
-// Safely initialize from localStorage so sessions survive refreshes
-const getInitialToken = () => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("hs_token");
-  }
-  return null;
-};
-
+// SECURITY FIX: Removed sessionStorage completely. 
+// The token now lives purely in JavaScript memory, making it immune to XSS attacks.
 export const useAuthStore = create<AuthState>((set) => ({
-  accessToken: getInitialToken(),
+  accessToken: null,
 
   setAccessToken: (token) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("hs_token", token);
-    }
     set({ accessToken: token });
   },
 
   clearAccessToken: () => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("hs_token");
-    }
     set({ accessToken: null });
   },
 }));

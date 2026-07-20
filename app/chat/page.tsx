@@ -6,12 +6,14 @@ import { ChatArea } from "@/components/chat/ChatArea";
 import { TheLemniscate } from "@/components/ui/TheLemniscate";
 import type { PersonaId, Persona } from "@/components/chat/PersonaSwitcher";
 import { useAuthStore } from "@/store/authStore";
+import { authApi } from "@/lib/apiClient";
 import { useRouter } from "next/navigation";
 
 export default function ChatPage() {
   const router = useRouter();
   const accessToken = useAuthStore((s) => s.accessToken);
 
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
@@ -20,11 +22,30 @@ export default function ChatPage() {
   const [resetKey, setResetKey] = useState(0);
   const [activeTitle, setActiveTitle] = useState("New Session");
 
+  // Bootstrap auth on mount: access token lives only in memory now,
+  // so on a hard refresh it's always null at first render. Try a
+  // silent refresh off the HttpOnly cookie before deciding to bounce
+  // the user to /auth.
   useEffect(() => {
-    if (!accessToken) {
-      router.push("/auth");
+    let cancelled = false;
+
+    async function bootstrap() {
+      if (!useAuthStore.getState().accessToken) {
+        const newToken = await authApi.refresh();
+        if (!newToken) {
+          if (!cancelled) router.push("/auth");
+          return;
+        }
+      }
+      if (!cancelled) setCheckingAuth(false);
     }
-  }, [accessToken, router]);
+
+    bootstrap();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
 
   useEffect(() => {
     const handleTitleUpdate = (e: Event) => {
@@ -52,6 +73,10 @@ export default function ChatPage() {
     document.title = "HeyScarlet";
     setResetKey(prev => prev + 1);
   };
+
+  if (checkingAuth) {
+    return null;
+  }
 
   return (
     <>

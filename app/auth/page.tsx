@@ -538,7 +538,6 @@ function RegisterForm() {
         last_name: sanitize(lastName),
       });
       setAccessToken(data.access_token);
-      sessionStorage.setItem("hs_authed", "1");
       router.push("/onboarding");
     } catch (err) {
       setServerError(err instanceof Error ? err.message : "Something went wrong. Please try again.");

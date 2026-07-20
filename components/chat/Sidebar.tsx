@@ -442,7 +442,7 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
                           {c.title || "New Session"}
                         </span>
                         
-                        <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity" style={{ marginLeft: 8 }}>
+                        <div className="conv-actions" style={{ marginLeft: 8, display: "flex", alignItems: "center", gap: 4 }}>
                           <button 
                             aria-label="Rename conversation"
                             onClick={(e) => { e.stopPropagation(); setEditingId(c.id); setEditValue(c.title || ""); }}
@@ -492,6 +492,13 @@ export function Sidebar({ activeId, onSelect, onNewChat, mobileOpen, onMobileClo
         @keyframes sb-shimmer { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
         .sb-scroll::-webkit-scrollbar { width: 3px; }
         .sb-scroll::-webkit-scrollbar-thumb { background: var(--border-subtle); border-radius: 3px; }
+
+        .conv-actions { opacity: 0; transition: opacity 0.15s; }
+        .group:hover .conv-actions { opacity: 1; }
+
+        @media (max-width: 768px) {
+          .conv-actions { opacity: 1; }
+        }
       `}</style>
     </motion.div>
   );
