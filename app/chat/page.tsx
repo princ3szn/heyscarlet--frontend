@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 
 export default function ChatPage() {
   const router = useRouter();
-  const accessToken = useAuthStore((s) => s.accessToken);
 
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
