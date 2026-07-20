@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
@@ -18,10 +18,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { accessToken, setAccessToken, clearAccessToken } = useAuthStore();
   const [ready, setReady] = useState(false);
 
+  // FIX: Strict Mode double-render guard. This mathematically guarantees
+  // the refresh endpoint is only hit exactly once on load.
+  const hasAttemptedRefresh = useRef(false);
+
   // On every fresh page load (or tab open), the access token is gone
   // from memory. Try a silent refresh using the httpOnly cookie so the
   // user does not have to log in again.
   useEffect(() => {
+    if (hasAttemptedRefresh.current) return;
+    hasAttemptedRefresh.current = true;
+
     authApi
       .refresh()
       .then((token) => {
