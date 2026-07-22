@@ -8,11 +8,21 @@ import type { PersonaId, Persona } from "@/components/chat/PersonaSwitcher";
 import { useAuth } from "@/lib/AuthProvider";
 import { useRouter } from "next/navigation";
 
+const ACTIVE_CONV_KEY = "hs_active_conversation";
+
 export default function ChatPage() {
   const router = useRouter();
   const { ready, isAuthenticated } = useAuth();
 
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  // Restore the last active conversation on mount so a refresh doesn't
+  // silently drop the user into a brand new session.
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      return sessionStorage.getItem(ACTIVE_CONV_KEY);
+    }
+    return null;
+  });
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [personaId, setPersonaId] = useState<PersonaId>("scarlet");
@@ -25,6 +35,17 @@ export default function ChatPage() {
       router.push("/auth");
     }
   }, [ready, isAuthenticated, router]);
+
+  // Keep sessionStorage in sync with whichever conversation is active,
+  // whether it changed via selecting one, creating one, or starting new.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (activeConversationId) {
+      sessionStorage.setItem(ACTIVE_CONV_KEY, activeConversationId);
+    } else {
+      sessionStorage.removeItem(ACTIVE_CONV_KEY);
+    }
+  }, [activeConversationId]);
 
   useEffect(() => {
     const handleTitleUpdate = (e: Event) => {
