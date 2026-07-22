@@ -209,25 +209,51 @@ export const chatApi = {
   /**
    * Streaming chat — returns a raw Response so the caller can
    * consume the ReadableStream directly.
+   *
+   * Unlike apiFetch, this can't just re-run makeRequest internally
+   * on 401 and return parsed JSON — the caller needs the raw
+   * Response/body stream. So we do the same refresh-and-retry dance,
+   * but still hand back a Response at the end.
    */
   stream: async (payload: { message: string; conversation_id?: string }) => {
+    const makeStreamRequest = (token: string | null) =>
+      fetch(`${BASE_URL}/api/v1/chat/stream`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+
     let token = getAccessToken();
-    
-    // SECURITY FIX: If token is missing in memory (e.g. after a hard page refresh),
-    // silently grab a new one via the HttpOnly cookie before establishing the stream.
+
+    // If there's no token in memory at all (e.g. very first load edge case),
+    // try to get one before we even attempt the request.
     if (!token) {
       token = await silentRefresh();
     }
 
-    return fetch(`${BASE_URL}/api/v1/chat/stream`, {
-      method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify(payload),
-    });
+    let res = await makeStreamRequest(token);
+
+    // Access token expired mid-session (15 min expiry). Refresh once
+    // off the httpOnly cookie and retry the stream request transparently.
+    if (res.status === 401) {
+      const newToken = await silentRefresh();
+
+      if (!newToken) {
+        // Refresh token itself is gone/invalid — genuinely logged out.
+        if (typeof window !== "undefined") {
+          window.location.href = "/auth";
+        }
+        throw new Error("Session expired. Please sign in again.");
+      }
+
+      res = await makeStreamRequest(newToken);
+    }
+
+    return res;
   },
 };
 

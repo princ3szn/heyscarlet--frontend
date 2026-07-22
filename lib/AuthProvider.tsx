@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useRef } fro
 import { useRouter } from "next/navigation";
 import { authApi } from "@/lib/apiClient";
 import { useAuthStore } from "@/store/authStore";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 interface AuthContextValue {
   ready: boolean;
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // THE FIX: We stop the app from rendering ANY pages until the silent refresh finishes.
   // This prevents the Chat page from prematurely kicking the user out.
   if (!ready) {
-    return <div style={{ height: "100vh", background: "var(--void)" }} />;
+    return <LoadingScreen message="Just a moment..." />;
   }
 
   return (
